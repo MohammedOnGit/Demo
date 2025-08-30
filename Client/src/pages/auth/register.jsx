@@ -19,6 +19,8 @@ function AuthRegister() {
 
   async function onSubmit(event) {
     event.preventDefault();
+
+    console.log(formData)
     try {
       const data = await dispatch(registerUser(formData));
 

@@ -1,12 +1,31 @@
 // Import helper function from Redux Toolkit for creating a slice of state
-import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 // 🔹 Initial state for authentication
 const initialState = {
-  user: null,             // Stores the logged-in user's data (null if not logged in)
-  isAuthenticated: false, // Boolean flag to check if user is logged in
-  loading: false,         // Indicates whether an auth request (login/logout) is in progress
+  user: null,            
+  isAuthenticated: false, 
+  isLoading: false,      
 };
+
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  async (formData, thunkAPI) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        formData,
+        { withCredentials: true } // ✅ no semicolon here
+      );
+      return response.data; // ✅ return data properly
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data || "Something went wrong"
+      );
+    }
+  }
+);
 
 // 🔹 Create the auth slice
 const authSlice = createSlice({
