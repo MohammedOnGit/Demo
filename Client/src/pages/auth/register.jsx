@@ -1,6 +1,6 @@
 
 import CommonForm from "@/components/common/form";
-import { toast } from "sonner";
+import { toast } from "sonner"
 import { registerFormControls } from "@/config";
 import { registerUser } from "@/store/auth-slice";  // ✅ import the thunk
 import { useState } from "react";
@@ -9,7 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 
 const initialState = {
-  userName: "",
+  userName: "",  
   email: "",
   password: "",
 };

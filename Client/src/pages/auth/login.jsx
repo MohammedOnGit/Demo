@@ -1,13 +1,13 @@
 import CommonForm from "@/components/common/form";
 import { toast } from "sonner";
 import { loginFormControls } from "@/config";
-// import { registerUser } from "@/store/auth-slice"; // ✅ make sure this is exported
+import { registerUser } from "@/store/auth-slice"; // ✅ make sure this is exported
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 
 const initialState = {
-  userName: "",
+  userName:"",
   email: "",
   password: "",
 };

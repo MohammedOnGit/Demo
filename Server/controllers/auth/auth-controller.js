@@ -7,7 +7,7 @@ const User = require('../../models/User');
 
 // ✅ Register User
 const registerUser = async (req, res) => {
-  const { username, email, password } = req.body;
+  const { userName, email, password } = req.body;
 
   try {
     // Check if user already exists
@@ -24,7 +24,7 @@ const registerUser = async (req, res) => {
 
     // Create new user
     const user = new User({
-      username,
+      userName,
       email,
       password: hashedPassword,
     });
@@ -44,7 +44,7 @@ const registerUser = async (req, res) => {
       success: true,
       message: "User registered successfully",
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: { id: user._id, userName: user.userName, email: user.email },
     });
   } catch (e) {
     console.error(e.message);
@@ -89,7 +89,7 @@ const login = async (req, res) => {
       success: true,
       message: "Login successful",
       token,
-      user: { id: user._id, username: user.username, email: user.email },
+      user: { id: user._id, userName: user.userName, email: user.email },
     });
   } catch (e) {
     console.error(e.message);
