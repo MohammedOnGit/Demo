@@ -1,10 +1,12 @@
+
 import CommonForm from "@/components/common/form";
 import { toast } from "sonner";
 import { registerFormControls } from "@/config";
-// import { registerUser } from "@/store/auth-slice"; // ✅ make sure this is exported
+import { registerUser } from "@/store/auth-slice";  // ✅ import the thunk
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+
 
 const initialState = {
   userName: "",
@@ -19,6 +21,8 @@ function AuthRegister() {
 
   async function onSubmit(event) {
     event.preventDefault();
+
+    console.log(formData)
     try {
       const data = await dispatch(registerUser(formData));
 

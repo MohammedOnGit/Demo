@@ -1,31 +1,63 @@
 // Import helper function from Redux Toolkit for creating a slice of state
-import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 
 // 🔹 Initial state for authentication
 const initialState = {
-  user: null,             // Stores the logged-in user's data (null if not logged in)
-  isAuthenticated: false, // Boolean flag to check if user is logged in
-  loading: false,         // Indicates whether an auth request (login/logout) is in progress
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
 };
+
+export const registerUser = createAsyncThunk(
+  "auth/register",
+  async (formData, thunkAPI) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        formData,
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data || "Something went wrong"
+      );
+    }
+  }
+);
 
 // 🔹 Create the auth slice
 const authSlice = createSlice({
-  name: 'auth',           // Slice name (used in Redux store)
-  initialState,           // Attach initial state
-  reducers: {             // Define reducer functions (state modifiers)
-
+  name: "auth",
+  initialState,
+  reducers: {
     // ✅ Sets the current user when logging in
     setUser(state, action) {
-      state.user = action.payload;   // Save user data from payload
-      state.isAuthenticated = true;  // Mark user as logged in
+      state.user = action.payload;
+      state.isAuthenticated = true;
     },
-
-    // (You can add more reducers here e.g., logout, setLoading, etc.)
-  }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = null // ✅ set user properly here
+        state.isAuthenticated = true;
+      })
+      .addCase(registerUser.rejected, (state) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+      });
+  },
 });
 
-// 🔹 Export actions so they can be dispatched in components
+// 🔹 Export actions
 export const { setUser } = authSlice.actions;
 
-// 🔹 Export reducer to be used in the Redux store
+// 🔹 Export reducer
 export default authSlice.reducer;
