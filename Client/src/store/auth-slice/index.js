@@ -16,9 +16,9 @@ export const registerUser = createAsyncThunk(
       const response = await axios.post(
         "http://localhost:5000/api/auth/register",
         formData,
-        { withCredentials: true } // ✅ no semicolon here
+        { withCredentials: true }
       );
-      return response.data; // ✅ return data properly
+      return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data || "Something went wrong"
@@ -29,25 +29,35 @@ export const registerUser = createAsyncThunk(
 
 // 🔹 Create the auth slice
 const authSlice = createSlice({
-  name: "auth", // Slice name (used in Redux store)
-  initialState, // Attach initial state
+  name: "auth",
+  initialState,
   reducers: {
-    // Define reducer functions (state modifiers)
-
     // ✅ Sets the current user when logging in
     setUser(state, action) {
-      state.user = action.payload; // Save user data from payload
-      state.isAuthenticated = true; // Mark user as logged in
+      state.user = action.payload;
+      state.isAuthenticated = true;
     },
-
-    
-
-    // (You can add more reducers here e.g., logout, setLoading, etc.)
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(registerUser.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = null // ✅ set user properly here
+        state.isAuthenticated = true;
+      })
+      .addCase(registerUser.rejected, (state) => {
+        state.isLoading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+      });
   },
 });
 
-// 🔹 Export actions so they can be dispatched in components
+// 🔹 Export actions
 export const { setUser } = authSlice.actions;
 
-// 🔹 Export reducer to be used in the Redux store
+// 🔹 Export reducer
 export default authSlice.reducer;

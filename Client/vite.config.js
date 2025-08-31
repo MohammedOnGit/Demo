@@ -10,5 +10,8 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // css: {
+    //   transformer: "postcss", // force PostCSS instead of lightningcss
+    // },
   },
 })
