@@ -46,8 +46,8 @@ const registerUser = async (req, res) => {
       token,
       user: { id: user._id, userName: user.userName, email: user.email },
     });
-  } catch (e) {
-    console.error(e.message);
+  } catch (error) {
+    console.error(error.message);
     res.status(500).json({
       success: false,
       message: "Something went wrong!",
@@ -91,8 +91,8 @@ const login = async (req, res) => {
       token,
       user: { id: user._id, userName: user.userName, email: user.email },
     });
-  } catch (e) {
-    console.error(e.message);
+  } catch (error) {
+    console.error(error.message);
     res.status(500).json({ success: false, message: "Something went wrong!" });
   }
 };
@@ -118,7 +118,7 @@ const authMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Attach user info to request
     next();
-  } catch (e) {
+  } catch (error) {
     return res.status(401).json({ success: false, message: "Invalid token" });
   }
 };

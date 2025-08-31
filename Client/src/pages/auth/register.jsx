@@ -21,22 +21,23 @@ function AuthRegister() {
 
   async function onSubmit(event) {
     event.preventDefault();
-
-    console.log(formData)
+    console.log(formData);
+  
     try {
       const data = await dispatch(registerUser(formData));
-
+  
       if (data?.payload?.success) {
-        toast.success(data?.payload?.message || "Registration successful");
+        toast.success(data?.payload?.message); // ✅ directly use backend message
         navigate("/auth/login");
       } else {
-        toast.error(data?.payload?.message || "Registration failed");
+        toast.error(data?.payload?.message);   // ✅ directly use backend message
       }
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
       console.error(error);
     }
   }
+  
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
