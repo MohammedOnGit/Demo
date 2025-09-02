@@ -1,13 +1,12 @@
 import CommonForm from "@/components/common/form";
 import { toast } from "sonner";
 import { loginFormControls } from "@/config";
-import { registerUser } from "@/store/auth-slice"; // ✅ make sure this is exported
+import { loginUser } from "@/store/auth-slice";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 
 const initialState = {
-  userName:"",
   email: "",
   password: "",
 };
@@ -20,13 +19,22 @@ function AuthLogin() {
   async function onSubmit(event) {
     event.preventDefault();
     try {
-      const data = await dispatch(registerUser(formData));
+      const data = await dispatch(loginUser(formData));
+
+      const message = data?.payload?.message;
+      const user = data?.payload?.user; // ✅ lowercase matches backend response
 
       if (data?.payload?.success) {
-        toast.success(data?.payload?.message || "Registration successful");
-        navigate("/auth/login");
+        toast.success(message || "Login successful");
+
+        // ✅ Redirect based on role
+        if (user?.role === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/shop/home");
+        }
       } else {
-        toast.error(data?.payload?.message || "Registration failed");
+        toast.error(message || "Login failed");
       }
     } catch (error) {
       toast.error("Something went wrong. Please try again.");

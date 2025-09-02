@@ -1,5 +1,5 @@
-// Import core routing components from React Router
-import { Route, Routes } from "react-router-dom";
+// Import core routing components
+import { Route, Routes, Navigate } from "react-router-dom";
 
 // Import global CSS styles
 import "./App.css";
@@ -28,13 +28,20 @@ import NotFound from "./pages/not-found";
 import CheckAuth from "./components/common/check-auth";
 import UnAuthPage from "./pages/unauth-page";
 
+// Redux
+import { useSelector, useDispatch } from "react-redux"; // ✅ FIXED
+import { useEffect } from "react";
+
+// Action
+import { checkAuth } from "./store/auth-slice"; 
+
 function App() {
-  const isAuthenticated = false;
-  const user = null;
-  // const user = {
-  //   name: "mohammed",
-  //   role: "admin",
-  // };
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const dispatch = useDispatch(); // ✅ FIXED
+
+  useEffect(() => {
+    dispatch(checkAuth()); // ✅ run checkAuth when app loads
+  }, [dispatch]);
 
   return (
     <div>
@@ -48,6 +55,7 @@ function App() {
             </CheckAuth>
           }
         >
+          <Route index element={<Navigate to="login" />} />
           <Route path="login" element={<AuthLogin />} />
           <Route path="register" element={<AuthRegister />} />
         </Route>
@@ -61,6 +69,8 @@ function App() {
             </CheckAuth>
           }
         >
+          {/* redirect to admin dashboard by default */}
+          <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<AdminDashBoard />} />
           <Route path="features" element={<AdminFeatures />} />
           <Route path="orders" element={<AdminOrders />} />
@@ -76,15 +86,16 @@ function App() {
             </CheckAuth>
           }
         >
+          <Route index element={<Navigate to="home" />} />
           <Route path="home" element={<ShoppingHome />} />
           <Route path="listing" element={<ShopListing />} />
           <Route path="checkout" element={<ShoppingCheckout />} />
           <Route path="account" element={<ShoppingAccount />} />
-
-          {/* Catch-all for invalid /shop routes */}
-          <Route path="unauth-page" element={<UnAuthPage/>} />
-          <Route path="*" element={<NotFound />} />
         </Route>
+
+        {/* ===================== UNAUTHORIZED & 404 ===================== */}
+        <Route path="/unauth-page" element={<UnAuthPage />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   );

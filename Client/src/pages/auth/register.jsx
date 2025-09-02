@@ -1,15 +1,14 @@
-
+// src/pages/auth/AuthRegister.jsx
 import CommonForm from "@/components/common/form";
-import { toast } from "sonner"
+import { toast } from "sonner";
 import { registerFormControls } from "@/config";
-import { registerUser } from "@/store/auth-slice";  // ✅ import the thunk
+import { registerUser } from "@/store/auth-slice"; // ✅ Redux thunk
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 
-
 const initialState = {
-  userName: "",  
+  userName: "",
   email: "",
   password: "",
 };
@@ -21,26 +20,26 @@ function AuthRegister() {
 
   async function onSubmit(event) {
     event.preventDefault();
-    console.log(formData);
-  
+
     try {
-      const data = await dispatch(registerUser(formData));
-  
-      if (data?.payload?.success) {
-        toast.success(data?.payload?.message); // ✅ directly use backend message
-        navigate("/auth/login");
+      const resultAction = await dispatch(registerUser(formData));
+      const data = resultAction.payload;
+
+      if (data?.success) {
+        toast.success(data?.message || "Account created successfully!");
+        navigate("/auth/login"); // ✅ redirect to login after success
       } else {
-        toast.error(data?.payload?.message);   // ✅ directly use backend message
+        toast.error(data?.message || "Registration failed. Try again.");
       }
     } catch (error) {
+      console.error("Registration error:", error);
       toast.error("Something went wrong. Please try again.");
-      console.error(error);
     }
   }
-  
 
   return (
     <div className="mx-auto w-full max-w-md space-y-6">
+      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Create new account
@@ -55,9 +54,11 @@ function AuthRegister() {
           </Link>
         </p>
       </div>
+
+      {/* Form */}
       <CommonForm
         formControls={registerFormControls}
-        buttonText={"Sign Up"}
+        buttonText="Sign Up"
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
