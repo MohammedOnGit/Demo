@@ -1,126 +1,150 @@
-// controllers/authController.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("../../models/User");
 
-const User = require('../../models/User');
+// ------------------ TOKEN HELPERS ------------------ //
+const generateTokens = (userId, userRole) => {
+  const accessToken = jwt.sign(
+    { id: userId, role: userRole },
+    process.env.JWT_SECRET,
+    { expiresIn: "60m" }
+  );
 
+  const refreshToken = jwt.sign(
+    { id: userId, role: userRole },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
-// ✅ Register User
-const registerUser = async (req, res) => {
-  const { userName, email, password } = req.body;
-
-  try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already registered",
-      });
-    }
-
-    // Hash password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
-    const user = new User({
-      userName,
-      email,
-      password: hashedPassword,
-    });
-
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d", // token valid for 1 day
-      }
-    );
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      token,
-      user: { id: user._id, userName: user.userName, email: user.email },
-    });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong!",
-    });
-  }
+  return { accessToken, refreshToken };
 };
 
-// ✅ Login User
-const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Check if user exists
-    const user = await User.findOne({ email }).select("+password"); // password was set to select:false in schema
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
-    );
-
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: { id: user._id, userName: user.userName, email: user.email },
-    });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ success: false, message: "Something went wrong!" });
-  }
-};
-
-// ✅ Logout (handled client-side, but we can invalidate tokens if using a DB/Redis)
-const logout = (req, res) => {
-  res.json({
-    success: true,
-    message: "Logout successful. Please clear token on client.",
+const setCookies = (res, accessToken, refreshToken) => {
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // true in prod
+    sameSite: "lax",
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
 
-// ✅ Auth Middleware (protect routes)
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Bearer <token>
-  if (!token) {
-    return res
-      .status(401)
-      .json({ success: false, message: "No token, authorization denied" });
-  }
+// ------------------ AUTH CONTROLLERS ------------------ //
 
+// Register
+exports.registerUser = async (req, res) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Attach user info to request
-    next();
-  } catch (error) {
-    return res.status(401).json({ success: false, message: "Invalid token" });
+    const { userName, email, password } = req.body;
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ success: false, message: "Email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = new User({ userName, email, password: hashedPassword });
+    await user.save();
+
+    res.status(201).json({ success: true, message: "User registered successfully" });
+  } catch (err) {
+    console.error("Register error:", err);
+    res.status(500).json({ success: false, message: "Server error. Please try again." });
   }
 };
 
-module.exports = { registerUser, login, logout, authMiddleware };
+// Login
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Email and password are required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(400).json({ success: false, message: "Invalid credentials" });
+
+    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+    setCookies(res, accessToken, refreshToken);
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        userName: user.userName,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error. Please try again." });
+  }
+};
+
+// Logout
+exports.logoutUser = (req, res) => {
+  res.clearCookie("accessToken");
+  res.clearCookie("refreshToken");
+  res.json({ success: true, message: "Logged out successfully" });
+};
+
+// Refresh token
+exports.refreshAccessToken = (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: "No refresh token provided" });
+    }
+
+    jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ success: false, message: "Invalid refresh token" });
+      }
+
+      const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+        decoded.id,
+        decoded.role
+      );
+
+      setCookies(res, accessToken, newRefreshToken);
+
+      res.json({ success: true });
+    });
+  } catch (err) {
+    console.error("Refresh token error:", err);
+    res.status(500).json({ success: false, message: "Server error. Please try again." });
+  }
+};
+
+// Middleware
+exports.authMiddleware = (req, res, next) => {
+  const token = req.cookies.accessToken;
+  if (!token) {
+    return res.status(401).json({ success: false, message: "Unauthorized: No token provided" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ success: false, message: "Invalid token" });
+    req.user = decoded;
+    next();
+  });
+};
+
+// Get current user
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("GetMe error:", err);
+    res.status(500).json({ success: false, message: "Server error. Please try again." });
+  }
+};
