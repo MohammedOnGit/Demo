@@ -35,13 +35,17 @@ import { useEffect } from "react";
 // Action
 import { checkAuth } from "./store/auth-slice"; 
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 function App() {
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
   const dispatch = useDispatch(); // ✅ FIXED
 
   useEffect(() => {
     dispatch(checkAuth()); // ✅ run checkAuth when app loads
   }, [dispatch]);
+
+  if(isLoading) return <Skeleton className="h-[800px] w-[800px]" />;
 
   return (
     <div>
