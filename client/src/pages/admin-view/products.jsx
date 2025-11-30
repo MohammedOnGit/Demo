@@ -7,6 +7,7 @@ import {
 } from "../../components/ui/sheet";
 import React, { Fragment, useState } from "react";
 import { addProductFormElements } from "@/config";
+import ProductImageUpload from "@/components/admin-view/image-upload";
 
 
 const initialFormData = {
@@ -33,6 +34,9 @@ function AdminProducts() {
     setFormData({});
   }
 
+  const [imageFile, setImageFile] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+
   return (
     <Fragment>
       <div className="mb-5 w-full flex justify-end">
@@ -55,6 +59,7 @@ function AdminProducts() {
         <SheetContent side="right" className="overflow-auto">
           <SheetHeader>
             <SheetTitle>Add New Product</SheetTitle>
+            <ProductImageUpload imageFile={imageFile} setImageFile={setImageFile} uploadedImageUrl={uploadedImageUrl} setUploadedImageUrl={setUploadedImageUrl}/>
             <div className="py-6">
               <CommonForm
                 formControls={addProductFormElements}
