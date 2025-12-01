@@ -1,8 +1,10 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { CloudUpload, FileIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import axios from "axios";
+import { toast } from "sonner";
 
 function ProductImageUpload({
   imageFile,
@@ -14,10 +16,7 @@ function ProductImageUpload({
 
   function handleImageFileChange(event) {
     const selectedFile = event.target.files[0];
-    if (selectedFile) {
-      setImageFile(selectedFile);
-      setUploadedImageUrl(URL.createObjectURL(selectedFile));
-    }
+    validateAndSetFile(selectedFile);
   }
 
   function handleDragOver(event) {
@@ -27,18 +26,64 @@ function ProductImageUpload({
   function handleDrop(event) {
     event.preventDefault();
     const droppedFile = event.dataTransfer.files?.[0];
-    if (droppedFile) {
-      setImageFile(droppedFile);
-      setUploadedImageUrl(URL.createObjectURL(droppedFile));
+    validateAndSetFile(droppedFile);
+  }
+
+  function validateAndSetFile(file) {
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only image files (jpg, jpeg, png, gif) are allowed!");
+      handleRemoveImage();
+      return;
     }
+
+    setImageFile(file);
+    setUploadedImageUrl(URL.createObjectURL(file));
   }
 
   function handleRemoveImage() {
     setImageFile(null);
     setUploadedImageUrl("");
-    if (inputRef.current) {
-      inputRef.current.value = null;
+    if (inputRef.current) inputRef.current.value = null;
+  }
+
+  async function uploadedImageToCloudinary() {
+    if (!imageFile) return;
+
+    const data = new FormData();
+    data.append("image", imageFile);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/admin/products/upload-image",
+        data
+      );
+
+      if (response.data.success) {
+        setUploadedImageUrl(response.data.imageUrl);
+        toast.success("Image uploaded successfully!");
+      }
+    } catch (error) {
+      const message =
+        error.response?.data?.error || "Something went wrong during upload";
+      toast.error(message);
+      handleRemoveImage();
     }
+  }
+
+  useEffect(() => {
+    if (imageFile) uploadedImageToCloudinary();
+  }, [imageFile]);
+
+  // Truncate long file names
+  function truncateFileName(name, maxLength = 15) {
+    if (!name) return "";
+    const ext = name.substring(name.lastIndexOf("."));
+    const baseName = name.substring(0, name.lastIndexOf("."));
+    if (baseName.length <= maxLength) return name;
+    return baseName.substring(0, maxLength) + "..." + ext;
   }
 
   return (
@@ -63,26 +108,39 @@ function ProductImageUpload({
             htmlFor="image-upload"
             className="flex flex-col items-center justify-center h-32 cursor-pointer"
           >
-            <CloudUpload className="w-10 h-10 text-shadow-muted-foreground mb-2" />
+            <CloudUpload className="w-10 h-10 text-muted-foreground mb-2" />
             <span>Drag & drop or click to upload image</span>
           </Label>
         ) : (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <FileIcon className="w-8 h-8 text-primary mr-2" />
-              <p className="text-sm font-medium">{imageFile.name}</p>
+          <>
+            {/* FILE NAME + REMOVE BUTTON */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center">
+                <FileIcon className="w-8 h-8 text-primary mr-2" />
+                <p className="text-sm font-medium">
+                  {truncateFileName(imageFile.name)}
+                </p>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:text-red-600"
+                onClick={handleRemoveImage}
+              >
+                <XIcon className="w-4 h-4 text-red-500" />
+              </Button>
             </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:text-red-600"
-              onClick={handleRemoveImage}
-            >
-              <XIcon className="w-4 h-4 text-red-500" />
-              <span className="sr-only">Remove File</span>
-            </Button>
-          </div>
+            {/* IMAGE PREVIEW */}
+            {uploadedImageUrl && (
+              <img
+                src={uploadedImageUrl}
+                alt="Preview"
+                className="w-full h-65 object-cover rounded-md border"
+              />
+            )}
+          </>
         )}
       </div>
     </div>
