@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { CloudUpload, FileIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import axios from "axios";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 
 function ProductImageUpload({
   imageFile,
@@ -13,8 +14,10 @@ function ProductImageUpload({
   setUploadedImageUrl,
 }) {
   const inputRef = useRef(null);
+  const [loading, setLoading] = useState(false); // ⬅️ NEW
 
   function handleImageFileChange(event) {
+    if (loading) return; // prevent file change during upload
     const selectedFile = event.target.files[0];
     validateAndSetFile(selectedFile);
   }
@@ -24,6 +27,7 @@ function ProductImageUpload({
   }
 
   function handleDrop(event) {
+    if (loading) return;
     event.preventDefault();
     const droppedFile = event.dataTransfer.files?.[0];
     validateAndSetFile(droppedFile);
@@ -44,6 +48,7 @@ function ProductImageUpload({
   }
 
   function handleRemoveImage() {
+    if (loading) return; // prevent deletion during upload
     setImageFile(null);
     setUploadedImageUrl("");
     if (inputRef.current) inputRef.current.value = null;
@@ -54,6 +59,7 @@ function ProductImageUpload({
 
     const data = new FormData();
     data.append("image", imageFile);
+    setLoading(true); // ⬅️ show spinner
 
     try {
       const response = await axios.post(
@@ -70,6 +76,8 @@ function ProductImageUpload({
         error.response?.data?.error || "Something went wrong during upload";
       toast.error(message);
       handleRemoveImage();
+    } finally {
+      setLoading(false); // ⬅️ hide spinner
     }
   }
 
@@ -77,7 +85,6 @@ function ProductImageUpload({
     if (imageFile) uploadedImageToCloudinary();
   }, [imageFile]);
 
-  // Truncate long file names
   function truncateFileName(name, maxLength = 15) {
     if (!name) return "";
     const ext = name.substring(name.lastIndexOf("."));
@@ -93,13 +100,16 @@ function ProductImageUpload({
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className="border-2 border-dashed rounded-lg p-4 mb-4 relative cursor-pointer"
+        className={`border-2 border-dashed rounded-lg p-4 mb-4 relative cursor-pointer ${
+          loading ? "opacity-60" : ""
+        }`}
       >
         <Input
           className="hidden"
           id="image-upload"
           type="file"
           ref={inputRef}
+          disabled={loading}
           onChange={handleImageFileChange}
         />
 
@@ -113,7 +123,6 @@ function ProductImageUpload({
           </Label>
         ) : (
           <>
-            {/* FILE NAME + REMOVE BUTTON */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
                 <FileIcon className="w-8 h-8 text-primary mr-2" />
@@ -127,18 +136,25 @@ function ProductImageUpload({
                 size="icon"
                 className="hover:text-red-600"
                 onClick={handleRemoveImage}
+                disabled={loading}
               >
                 <XIcon className="w-4 h-4 text-red-500" />
               </Button>
             </div>
 
-            {/* IMAGE PREVIEW */}
-            {uploadedImageUrl && (
-              <img
-                src={uploadedImageUrl}
-                alt="Preview"
-                className="w-full h-65 object-cover rounded-md border"
-              />
+            {/* 🔥 SPINNER WHILE UPLOADING */}
+            {loading ? (
+              <div className="w-full flex justify-center py-6">
+                <Spinner className="h-10 w-10 text-primary" />
+              </div>
+            ) : (
+              uploadedImageUrl && (
+                <img
+                  src={uploadedImageUrl}
+                  alt="Preview"
+                  className="w-full h-65 object-cover rounded-md border"
+                />
+              )
             )}
           </>
         )}

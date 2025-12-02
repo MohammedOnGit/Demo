@@ -26,6 +26,7 @@ function AdminProducts() {
   const [formData, setFormData] = useState({initialFormData});
 
   
+
   function handleCreateProduct(event) {
     event.preventDefault();
     console.log("Product data:", formData);
@@ -36,7 +37,7 @@ function AdminProducts() {
 
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
-
+  const [imageLoadingState, setImageLoadingState] = useState(false);
   return (
     <Fragment>
       <div className="mb-5 w-full flex justify-end">
@@ -59,7 +60,8 @@ function AdminProducts() {
         <SheetContent side="right" className="overflow-auto">
           <SheetHeader>
             <SheetTitle>Add New Product</SheetTitle>
-            <ProductImageUpload imageFile={imageFile} setImageFile={setImageFile} uploadedImageUrl={uploadedImageUrl} setUploadedImageUrl={setUploadedImageUrl}/>
+            <ProductImageUpload imageFile={imageFile} setImageFile={setImageFile} uploadedImageUrl={uploadedImageUrl} setUploadedImageUrl={setUploadedImageUrl}
+            setImageLoadingState={setImageLoadingState} />
             <div className="py-6">
               <CommonForm
                 formControls={addProductFormElements}
