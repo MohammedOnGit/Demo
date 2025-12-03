@@ -1,3 +1,5 @@
+// AdminProducts.jsx
+import React, { Fragment, useEffect, useState } from "react";
 import CommonForm from "@/components/common/form";
 import {
   Sheet,
@@ -5,39 +7,67 @@ import {
   SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet";
-import React, { Fragment, useState } from "react";
-import { addProductFormElements } from "@/config";
 import ProductImageUpload from "@/components/admin-view/image-upload";
-
+import { addProductFormElements } from "@/config";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAllProducts, addNewProduct } from "@/store/admin/product-slice";
+import { toast } from "sonner";
 
 const initialFormData = {
-  Image: null,
   title: "",
   description: "",
   category: "",
   brand: "",
   price: "",
   salePrice: "",
-
 };
 
 function AdminProducts() {
   const [openCreateProductDialog, setOpenCreateProductDialog] = useState(false);
-  const [formData, setFormData] = useState({initialFormData});
-
-  
-
-  function handleCreateProduct(event) {
-    event.preventDefault();
-    console.log("Product data:", formData);
-
-    setOpenCreateProductDialog(false);
-    setFormData({});
-  }
+  const [formData, setFormData] = useState(initialFormData);
 
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingState, setImageLoadingState] = useState(false);
+
+  const dispatch = useDispatch();
+  const { products } = useSelector((state) => state.adminProducts);
+
+  useEffect(() => {
+    dispatch(fetchAllProducts());
+  }, [dispatch]);
+
+  function handleCreateProduct(event) {
+    event.preventDefault();
+
+    if (imageLoadingState) {
+      toast.error("Image is still uploading...");
+      return;
+    }
+
+    if (!uploadedImageUrl) {
+      toast.error("Upload a product image first");
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      image: uploadedImageUrl,
+    };
+
+    dispatch(addNewProduct(payload))
+      .unwrap()
+      .then(() => {
+        toast.success("Product added!");
+        dispatch(fetchAllProducts());
+        setFormData(initialFormData);
+        setUploadedImageUrl("");
+        setImageFile(null);
+        setOpenCreateProductDialog(false);
+      })
+      .catch(() => toast.error("Failed to add product"));
+  }
+
   return (
     <Fragment>
       <div className="mb-5 w-full flex justify-end">
@@ -50,7 +80,13 @@ function AdminProducts() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {/* Product cards will go here */}
+        {products?.map((p) => (
+          <div key={p._id} className="border p-3 rounded">
+            <img src={p.image} className="w-full h-48 object-cover rounded" />
+            <h3 className="font-medium mt-2">{p.title}</h3>
+            <p className="text-sm text-gray-600">{p.description}</p>
+          </div>
+        ))}
       </div>
 
       <Sheet
@@ -60,16 +96,23 @@ function AdminProducts() {
         <SheetContent side="right" className="overflow-auto">
           <SheetHeader>
             <SheetTitle>Add New Product</SheetTitle>
-            <ProductImageUpload imageFile={imageFile} setImageFile={setImageFile} uploadedImageUrl={uploadedImageUrl} setUploadedImageUrl={setUploadedImageUrl}
-            setImageLoadingState={setImageLoadingState} />
+
+            <ProductImageUpload
+              imageFile={imageFile}
+              setImageFile={setImageFile}
+              uploadedImageUrl={uploadedImageUrl}
+              setUploadedImageUrl={setUploadedImageUrl}
+              setImageLoadingState={setImageLoadingState}
+            />
+
             <div className="py-6">
               <CommonForm
                 formControls={addProductFormElements}
                 formData={formData}
                 setFormData={setFormData}
                 onSubmit={handleCreateProduct}
-                buttonText="Add Product"
-                isBtnDisabled={false}
+                buttonText={imageLoadingState ? "Uploading..." : "Add Product"}
+                isBtnDisabled={imageLoadingState || !uploadedImageUrl}
               />
             </div>
           </SheetHeader>

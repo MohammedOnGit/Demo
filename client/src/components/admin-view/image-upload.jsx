@@ -5,19 +5,20 @@ import { CloudUpload, FileIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import axios from "axios";
 import { toast } from "sonner";
-import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "../ui/skeleton";
 
 function ProductImageUpload({
   imageFile,
   setImageFile,
   uploadedImageUrl,
   setUploadedImageUrl,
+  setImageLoadingState,
 }) {
   const inputRef = useRef(null);
-  const [loading, setLoading] = useState(false); // ⬅️ NEW
+  const [loading, setLoading] = useState(false);
 
   function handleImageFileChange(event) {
-    if (loading) return; // prevent file change during upload
+    if (loading) return;
     const selectedFile = event.target.files[0];
     validateAndSetFile(selectedFile);
   }
@@ -31,6 +32,14 @@ function ProductImageUpload({
     event.preventDefault();
     const droppedFile = event.dataTransfer.files?.[0];
     validateAndSetFile(droppedFile);
+  }
+
+  function truncateFileName(name, maxLength = 15) {
+    if (!name) return "";
+    const ext = name.substring(name.lastIndexOf("."));
+    const baseName = name.substring(0, name.lastIndexOf("."));
+    if (baseName.length <= maxLength) return name;
+    return baseName.substring(0, maxLength) + "..." + ext;
   }
 
   function validateAndSetFile(file) {
@@ -48,18 +57,20 @@ function ProductImageUpload({
   }
 
   function handleRemoveImage() {
-    if (loading) return; // prevent deletion during upload
+    if (loading) return;
     setImageFile(null);
     setUploadedImageUrl("");
     if (inputRef.current) inputRef.current.value = null;
   }
 
-  async function uploadedImageToCloudinary() {
+  async function uploadImageToServer() {
     if (!imageFile) return;
 
     const data = new FormData();
     data.append("image", imageFile);
-    setLoading(true); // ⬅️ show spinner
+
+    setLoading(true);
+    setImageLoadingState(true);
 
     try {
       const response = await axios.post(
@@ -72,26 +83,19 @@ function ProductImageUpload({
         toast.success("Image uploaded successfully!");
       }
     } catch (error) {
-      const message =
-        error.response?.data?.error || "Something went wrong during upload";
-      toast.error(message);
+      toast.error(
+        error.response?.data?.error || "Something went wrong during upload"
+      );
       handleRemoveImage();
     } finally {
-      setLoading(false); // ⬅️ hide spinner
+      setLoading(false);
+      setImageLoadingState(false);
     }
   }
 
   useEffect(() => {
-    if (imageFile) uploadedImageToCloudinary();
+    if (imageFile) uploadImageToServer();
   }, [imageFile]);
-
-  function truncateFileName(name, maxLength = 15) {
-    if (!name) return "";
-    const ext = name.substring(name.lastIndexOf("."));
-    const baseName = name.substring(0, name.lastIndexOf("."));
-    if (baseName.length <= maxLength) return name;
-    return baseName.substring(0, maxLength) + "..." + ext;
-  }
 
   return (
     <div className="w-full max-w-md mx-auto mt-4">
@@ -104,6 +108,7 @@ function ProductImageUpload({
           loading ? "opacity-60" : ""
         }`}
       >
+        {/* Hidden input */}
         <Input
           className="hidden"
           id="image-upload"
@@ -113,6 +118,7 @@ function ProductImageUpload({
           onChange={handleImageFileChange}
         />
 
+        {/* No image yet: show upload prompt */}
         {!imageFile ? (
           <Label
             htmlFor="image-upload"
@@ -123,39 +129,37 @@ function ProductImageUpload({
           </Label>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center">
-                <FileIcon className="w-8 h-8 text-primary mr-2" />
-                <p className="text-sm font-medium">
-                  {truncateFileName(imageFile.name)}
-                </p>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hover:text-red-600"
-                onClick={handleRemoveImage}
-                disabled={loading}
-              >
-                <XIcon className="w-4 h-4 text-red-500" />
-              </Button>
+            {/* File Name */}
+            <div className="flex items-center mb-3">
+              <FileIcon className="w-8 h-8 text-primary mr-2" />
+              <p className="text-sm font-medium">
+                {truncateFileName(imageFile.name)}
+              </p>
             </div>
 
-            {/* 🔥 SPINNER WHILE UPLOADING */}
+            {/* Skeleton or Actual Image */}
             {loading ? (
-              <div className="w-full flex justify-center py-6">
-                <Spinner className="h-10 w-10 text-primary" />
-              </div>
+              <Skeleton className="w-full aspect-square rounded-md bg-gray-300" />
             ) : (
               uploadedImageUrl && (
                 <img
                   src={uploadedImageUrl}
                   alt="Preview"
-                  className="w-full h-65 object-cover rounded-md border"
+                  className="w-full aspect-square object-cover rounded-md border"
                 />
               )
             )}
+
+            {/* Remove Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 hover:text-red-600"
+              onClick={handleRemoveImage}
+              disabled={loading}
+            >
+              <XIcon className="w-4 h-4 text-red-500" />
+            </Button>
           </>
         )}
       </div>
