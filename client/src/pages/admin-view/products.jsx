@@ -43,35 +43,36 @@ function AdminProducts() {
     dispatch(fetchAllProducts());
   }, [dispatch]);
 
-  function handleCreateProduct(event) {
-    event.preventDefault();
 
+  function onSubmit(event) {
+    event.preventDefault();
+  
     if (imageLoadingState) {
       toast.error("Image is still uploading...");
       return;
     }
-
+  
     if (!uploadedImageUrl && !currentEditedId) {
       toast.error("Upload a product image first");
       return;
     }
-
+  
     if (!formData.title || !formData.price || !formData.category) {
       toast.error("Please fill all required fields");
       return;
     }
-
+  
     const payload = {
       ...formData,
-      image: uploadedImageUrl || formData.image, // use existing image if editing
+      image: uploadedImageUrl || formData.image,
     };
-
+  
     if (currentEditedId) {
-      // ✅ EDIT PRODUCT
+      // ✅ EDIT PRODUCT (FIXED)
       dispatch(editProduct({ productId: currentEditedId, formData: payload }))
         .unwrap()
         .then(() => {
-          toast.success("Product updated!");
+          toast.success("Product updated successfully!");
           dispatch(fetchAllProducts());
           resetForm();
         })
@@ -80,7 +81,7 @@ function AdminProducts() {
           toast.error("Failed to update product");
         });
     } else {
-      // ✅ ADD NEW PRODUCT
+      // ✅ ADD NEW PRODUCT (FIXED)
       dispatch(addNewProduct(payload))
         .unwrap()
         .then(() => {
@@ -94,6 +95,8 @@ function AdminProducts() {
         });
     }
   }
+  
+
 
   function resetForm() {
     setFormData(initialFormData);
@@ -160,7 +163,7 @@ function AdminProducts() {
                 formControls={addProductFormElements}
                 formData={formData}
                 setFormData={setFormData}
-                onSubmit={handleCreateProduct}
+                onSubmit={onSubmit}
                 buttonText={
                   currentEditedId
                     ? imageLoadingState

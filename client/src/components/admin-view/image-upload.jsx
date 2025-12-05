@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { CloudUpload, FileIcon, XIcon, CircleX } from "lucide-react";
+import { CloudUpload, FileIcon, XIcon, } from "lucide-react";
 import { Button } from "../ui/button";
 import axios from "axios";
 import { toast } from "sonner";
@@ -169,7 +169,7 @@ function ProductImageUpload({
               disabled={loading || isEditMode} 
             >
               {
-                isEditMode ? ( <CircleX className="w-4 h-4 text-red-500" />) : (<XIcon className="w-4 h-4 text-red-500" />)
+                isEditMode ? ( "") : (<XIcon className="w-4 h-4 text-red-500" />)
               }
               
             </Button>

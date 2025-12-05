@@ -69,8 +69,42 @@ const fetchAllProducts = async (req, res) => {
   }
 };
 
+// ✅✅✅ UPDATE PRODUCT CONTROLLER
+const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true } // return updated doc
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedProduct,
+    });
+
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update product",
+    });
+  }
+};
+
+
 module.exports = {
   uploadProductImage,
   addProduct,
   fetchAllProducts,
+  updateProduct,
 };
