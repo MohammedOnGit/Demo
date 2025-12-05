@@ -15,7 +15,7 @@ import {
 import { Button } from "../ui/button";
 import { TrashIcon, SquarePen } from "lucide-react";
 
-function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDialog, setFormData }) {
+function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDialog, setFormData,handleDelete }) {
   const hasSalePrice = product?.salePrice && product.salePrice > 0;
 
   const maxLength = 30;
@@ -28,10 +28,8 @@ function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDial
 
   return (
     <Card className="max-w-md pt-0 flex flex-col">
-      {""}
-      {/* ✅ FLEX COLUMN */}
       {/* IMAGE */}
-      <CardContent className="px-0">
+      <CardContent className="px-0 border-black/10 border-b-2">
         <img
           src={product?.image}
           alt={product?.title}
@@ -40,7 +38,7 @@ function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDial
       </CardContent>
       {/* HEADER */}
       <CardHeader className="px-4">
-        <CardTitle className="text-left text-lg sm:text-xl md:text-2xl font-bold tracking-tight">
+        <CardTitle className="text-left text-lg sm:text-xl md:text-2xl font-bold tracking-tight py-0 mb-8">
           <Tooltip>
             <TooltipTrigger asChild>
               <p className="cursor-pointer">
@@ -53,9 +51,9 @@ function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDial
           </Tooltip>
         </CardTitle>
 
-        <CardDescription className="flex items-center gap-5 text-left">
+        <CardDescription className="flex justify-between items-center gap-5 text-left">
           <span
-            className={`text-sm sm:text-base ${
+            className={`font-extrabold text-sm sm:text-base ${
               hasSalePrice ? "line-through text-gray-500" : ""
             }`}
           >
@@ -80,7 +78,9 @@ function AdminProductTile({ product,setCurrentEditedId, setOpenCreateProductDial
           Edit
         </Button>
 
-        <Button className="from-destructive via-destructive/60 to-destructive bg-transparent bg-gradient-to-r text-white">
+        <Button onClick={()=>{
+          handleDelete(product?._id);
+        }} className="from-destructive via-destructive/60 to-destructive bg-transparent bg-gradient-to-r text-white">
           <TrashIcon />
           Delete
         </Button>

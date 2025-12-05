@@ -4,6 +4,7 @@ const router = express.Router();
 const { upload } = require("../../helpers/cloudinary");
 
 const {
+  deleteProduct,
   uploadProductImage,
   addProduct,
   fetchAllProducts,
@@ -31,5 +32,8 @@ router.get("/all", fetchAllProducts);
 
 // ✅✅✅ UPDATE PRODUCT (THIS WAS MISSING)
 router.put("/:id", updateProduct);
+
+// ✅ DELETE ROUTE
+router.delete("/delete/:id", deleteProduct);
 
 module.exports = router;

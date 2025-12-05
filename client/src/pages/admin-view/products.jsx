@@ -13,7 +13,10 @@ import {
   fetchAllProducts,
   addNewProduct,
   editProduct,
+  deletedProduct,
 } from "@/store/admin/product-slice";
+
+import { PackageOpen } from "lucide-react";
 import { toast } from "sonner";
 import AdminProductTile from "@/components/admin-view/product-tile";
 
@@ -24,18 +27,16 @@ const initialFormData = {
   brand: "",
   price: "",
   salePrice: "",
-  image: "", 
+  image: "",
 };
 
 function AdminProducts() {
   const [openCreateProductDialog, setOpenCreateProductDialog] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
-
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingState, setImageLoadingState] = useState(false);
   const [currentEditedId, setCurrentEditedId] = useState(null);
-
   const dispatch = useDispatch();
   const { products } = useSelector((state) => state.adminProducts);
 
@@ -43,32 +44,22 @@ function AdminProducts() {
     dispatch(fetchAllProducts());
   }, [dispatch]);
 
-
+  // ✅ SUBMIT (ADD / EDIT)
   function onSubmit(event) {
     event.preventDefault();
-  
-    if (imageLoadingState) {
-      toast.error("Image is still uploading...");
-      return;
-    }
-  
-    if (!uploadedImageUrl && !currentEditedId) {
-      toast.error("Upload a product image first");
-      return;
-    }
-  
+    if (imageLoadingState) return toast.error("Image is still uploading...");
+    if (!uploadedImageUrl && !currentEditedId)
+      return toast.error("Upload a product image first");
     if (!formData.title || !formData.price || !formData.category) {
-      toast.error("Please fill all required fields");
-      return;
+      return toast.error("Please fill all required fields");
     }
-  
+
     const payload = {
       ...formData,
       image: uploadedImageUrl || formData.image,
     };
-  
+
     if (currentEditedId) {
-      // ✅ EDIT PRODUCT (FIXED)
       dispatch(editProduct({ productId: currentEditedId, formData: payload }))
         .unwrap()
         .then(() => {
@@ -76,27 +67,29 @@ function AdminProducts() {
           dispatch(fetchAllProducts());
           resetForm();
         })
-        .catch((error) => {
-          console.error("Update product failed:", error);
-          toast.error("Failed to update product");
-        });
+        .catch(() => toast.error("Failed to update product"));
     } else {
-      // ✅ ADD NEW PRODUCT (FIXED)
       dispatch(addNewProduct(payload))
         .unwrap()
         .then(() => {
-          toast.success("Product added!");
+          toast.success("Product added successfully!");
           dispatch(fetchAllProducts());
           resetForm();
         })
-        .catch((error) => {
-          console.error("Add product failed:", error);
-          toast.error("Failed to add product");
-        });
+        .catch(() => toast.error("Failed to add product"));
     }
   }
-  
 
+  // ✅ DELETE
+  function handleDelete(productId) {
+    dispatch(deletedProduct({ productId }))
+      .unwrap()
+      .then(() => {
+        toast.success("Product deleted successfully!");
+        dispatch(fetchAllProducts());
+      })
+      .catch(() => toast.error("Failed to delete product"));
+  }
 
   function resetForm() {
     setFormData(initialFormData);
@@ -107,45 +100,79 @@ function AdminProducts() {
     setOpenCreateProductDialog(false);
   }
 
+  function isProductListEmpty() {
+     return !products || products.length === 0;
+  }
+
   const isFormInvalid =
     !formData.title || !formData.price || !formData.category;
 
   return (
     <Fragment>
+      {/* ✅ ADD BUTTON */}
       <div className="mb-5 w-full flex justify-end">
         <button
           onClick={() => {
             resetForm();
             setOpenCreateProductDialog(true);
+          
           }}
-          className="px-4 py-2 bg-black text-white rounded"
+          className={`${
+            isProductListEmpty() ? "hidden " : ""
+          }px-4 py-2 bg-black text-white rounded`}
         >
           Add New Product
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {products && products.length > 0
-          ? products.map((product) => (
-              <AdminProductTile
-                key={product._id}
-                product={product}
-                setCurrentEditedId={setCurrentEditedId}
-                setOpenCreateProductDialog={setOpenCreateProductDialog}
-                setFormData={setFormData}
-                isEditMode={currentEditedId === product._id}
-              />
-            ))
-          : null}
+      {/* ✅ ✅ ✅ PRODUCTS GRID / EMPTY STATE */}
+<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 min-h-[70vh]">
+  {!isProductListEmpty() ? (
+    products.map((product) => (
+      <AdminProductTile
+        key={product._id}
+        product={product}
+        setCurrentEditedId={setCurrentEditedId}
+        setOpenCreateProductDialog={setOpenCreateProductDialog}
+        setFormData={setFormData}
+        isEditMode={currentEditedId === product._id}
+        handleDelete={handleDelete}
+      />
+    ))
+  ) : (
+    // ✅ PERFECTLY CENTERED EMPTY STATE
+    <div className="col-span-full flex items-center justify-center">
+      <div className="flex flex-col items-center text-center text-gray-500">
+        <PackageOpen size={90} className="mb-4 text-gray-400" />
+        <h2 className="text-xl font-semibold text-gray-700">
+          No products available
+        </h2>
+        <p className="mt-2 text-sm">
+          Click below to add your first product
+        </p>
+        <button
+          className="mt-5 px-5 py-2 bg-black text-white rounded"
+          onClick={() => {
+            resetForm();
+            setOpenCreateProductDialog(true);
+          }}
+        >
+          ➕ Add First Product
+        </button>
       </div>
+    </div>
+  )}
+</div>
 
+
+      {/* ✅ ✅ ✅ SHEET (ADD / EDIT FORM) */}
       <Sheet
         open={openCreateProductDialog}
         onOpenChange={setOpenCreateProductDialog}
       >
         <SheetContent side="right" className="overflow-auto">
           <SheetHeader>
-            <SheetTitle className='text-center text-xl font-bold'>
+            <SheetTitle className="text-center text-xl font-bold">
               {currentEditedId ? "Edit Product" : "Add New Product"}
             </SheetTitle>
 
@@ -159,7 +186,7 @@ function AdminProducts() {
             />
 
             <div className="py-6">
-              <CommonForm 
+              <CommonForm
                 formControls={addProductFormElements}
                 formData={formData}
                 setFormData={setFormData}
@@ -188,4 +215,3 @@ function AdminProducts() {
 }
 
 export default AdminProducts;
-
