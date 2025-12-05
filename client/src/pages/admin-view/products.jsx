@@ -1,5 +1,4 @@
-// AdminProducts.jsx
-import React, { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import CommonForm from "@/components/common/form";
 import {
   Sheet,
@@ -10,8 +9,13 @@ import {
 import ProductImageUpload from "@/components/admin-view/image-upload";
 import { addProductFormElements } from "@/config";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllProducts, addNewProduct } from "@/store/admin/product-slice";
+import {
+  fetchAllProducts,
+  addNewProduct,
+  editProduct,
+} from "@/store/admin/product-slice";
 import { toast } from "sonner";
+import AdminProductTile from "@/components/admin-view/product-tile";
 
 const initialFormData = {
   title: "",
@@ -20,6 +24,7 @@ const initialFormData = {
   brand: "",
   price: "",
   salePrice: "",
+  image: "", 
 };
 
 function AdminProducts() {
@@ -29,6 +34,7 @@ function AdminProducts() {
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingState, setImageLoadingState] = useState(false);
+  const [currentEditedId, setCurrentEditedId] = useState(null);
 
   const dispatch = useDispatch();
   const { products } = useSelector((state) => state.adminProducts);
@@ -45,34 +51,70 @@ function AdminProducts() {
       return;
     }
 
-    if (!uploadedImageUrl) {
+    if (!uploadedImageUrl && !currentEditedId) {
       toast.error("Upload a product image first");
+      return;
+    }
+
+    if (!formData.title || !formData.price || !formData.category) {
+      toast.error("Please fill all required fields");
       return;
     }
 
     const payload = {
       ...formData,
-      image: uploadedImageUrl,
+      image: uploadedImageUrl || formData.image, // use existing image if editing
     };
 
-    dispatch(addNewProduct(payload))
-      .unwrap()
-      .then(() => {
-        toast.success("Product added!");
-        dispatch(fetchAllProducts());
-        setFormData(initialFormData);
-        setUploadedImageUrl("");
-        setImageFile(null);
-        setOpenCreateProductDialog(false);
-      })
-      .catch(() => toast.error("Failed to add product"));
+    if (currentEditedId) {
+      // ✅ EDIT PRODUCT
+      dispatch(editProduct({ productId: currentEditedId, formData: payload }))
+        .unwrap()
+        .then(() => {
+          toast.success("Product updated!");
+          dispatch(fetchAllProducts());
+          resetForm();
+        })
+        .catch((error) => {
+          console.error("Update product failed:", error);
+          toast.error("Failed to update product");
+        });
+    } else {
+      // ✅ ADD NEW PRODUCT
+      dispatch(addNewProduct(payload))
+        .unwrap()
+        .then(() => {
+          toast.success("Product added!");
+          dispatch(fetchAllProducts());
+          resetForm();
+        })
+        .catch((error) => {
+          console.error("Add product failed:", error);
+          toast.error("Failed to add product");
+        });
+    }
   }
+
+  function resetForm() {
+    setFormData(initialFormData);
+    setUploadedImageUrl("");
+    setImageFile(null);
+    setImageLoadingState(false);
+    setCurrentEditedId(null);
+    setOpenCreateProductDialog(false);
+  }
+
+  const isFormInvalid =
+    !formData.title || !formData.price || !formData.category;
 
   return (
     <Fragment>
       <div className="mb-5 w-full flex justify-end">
         <button
-          onClick={() => setOpenCreateProductDialog(true)}
+          onClick={() => {
+            resetForm();
+            setOpenCreateProductDialog(true);
+          }}
           className="px-4 py-2 bg-black text-white rounded"
         >
           Add New Product
@@ -80,13 +122,18 @@ function AdminProducts() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {products?.map((p) => (
-          <div key={p._id} className="border p-3 rounded">
-            <img src={p.image} className="w-full h-48 object-cover rounded" />
-            <h3 className="font-medium mt-2">{p.title}</h3>
-            <p className="text-sm text-gray-600">{p.description}</p>
-          </div>
-        ))}
+        {products && products.length > 0
+          ? products.map((product) => (
+              <AdminProductTile
+                key={product._id}
+                product={product}
+                setCurrentEditedId={setCurrentEditedId}
+                setOpenCreateProductDialog={setOpenCreateProductDialog}
+                setFormData={setFormData}
+                isEditMode={currentEditedId === product._id}
+              />
+            ))
+          : null}
       </div>
 
       <Sheet
@@ -95,24 +142,39 @@ function AdminProducts() {
       >
         <SheetContent side="right" className="overflow-auto">
           <SheetHeader>
-            <SheetTitle>Add New Product</SheetTitle>
+            <SheetTitle className='text-center text-xl font-bold'>
+              {currentEditedId ? "Edit Product" : "Add New Product"}
+            </SheetTitle>
 
             <ProductImageUpload
               imageFile={imageFile}
               setImageFile={setImageFile}
-              uploadedImageUrl={uploadedImageUrl}
+              uploadedImageUrl={uploadedImageUrl || formData.image}
               setUploadedImageUrl={setUploadedImageUrl}
               setImageLoadingState={setImageLoadingState}
+              isEditMode={currentEditedId !== null}
             />
 
             <div className="py-6">
-              <CommonForm
+              <CommonForm 
                 formControls={addProductFormElements}
                 formData={formData}
                 setFormData={setFormData}
                 onSubmit={handleCreateProduct}
-                buttonText={imageLoadingState ? "Uploading..." : "Add Product"}
-                isBtnDisabled={imageLoadingState || !uploadedImageUrl}
+                buttonText={
+                  currentEditedId
+                    ? imageLoadingState
+                      ? "Updating..."
+                      : "Update Product"
+                    : imageLoadingState
+                    ? "Uploading..."
+                    : "Add Product"
+                }
+                isBtnDisabled={
+                  imageLoadingState ||
+                  (!uploadedImageUrl && !currentEditedId) ||
+                  isFormInvalid
+                }
               />
             </div>
           </SheetHeader>
@@ -123,3 +185,4 @@ function AdminProducts() {
 }
 
 export default AdminProducts;
+

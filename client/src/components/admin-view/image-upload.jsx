@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { CloudUpload, FileIcon, XIcon } from "lucide-react";
+import { CloudUpload, FileIcon, XIcon, CircleX } from "lucide-react";
 import { Button } from "../ui/button";
 import axios from "axios";
 import { toast } from "sonner";
@@ -13,9 +13,11 @@ function ProductImageUpload({
   uploadedImageUrl,
   setUploadedImageUrl,
   setImageLoadingState,
+  isEditMode,
 }) {
   const inputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   function handleImageFileChange(event) {
     if (loading) return;
@@ -38,8 +40,9 @@ function ProductImageUpload({
     if (!name) return "";
     const ext = name.substring(name.lastIndexOf("."));
     const baseName = name.substring(0, name.lastIndexOf("."));
-    if (baseName.length <= maxLength) return name;
-    return baseName.substring(0, maxLength) + "..." + ext;
+    return baseName.length > maxLength
+      ? baseName.substring(0, maxLength) + "..." + ext
+      : name;
   }
 
   function validateAndSetFile(file) {
@@ -52,19 +55,25 @@ function ProductImageUpload({
       return;
     }
 
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview); // ✅ safe preview only
     setImageFile(file);
-    setUploadedImageUrl(URL.createObjectURL(file));
   }
 
   function handleRemoveImage() {
     if (loading) return;
+
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+
+    setPreviewUrl("");
     setImageFile(null);
     setUploadedImageUrl("");
+
     if (inputRef.current) inputRef.current.value = null;
   }
 
   async function uploadImageToServer() {
-    if (!imageFile) return;
+    if (!imageFile || loading) return;
 
     const data = new FormData();
     data.append("image", imageFile);
@@ -79,7 +88,7 @@ function ProductImageUpload({
       );
 
       if (response.data.success) {
-        setUploadedImageUrl(response.data.imageUrl);
+        setUploadedImageUrl(response.data.imageUrl); // ✅ CLOUD URL
         toast.success("Image uploaded successfully!");
       }
     } catch (error) {
@@ -93,9 +102,17 @@ function ProductImageUpload({
     }
   }
 
+  // Upload image when imageFile changes
   useEffect(() => {
     if (imageFile) uploadImageToServer();
   }, [imageFile]);
+
+  // Populate preview when in edit mode
+  useEffect(() => {
+    if (uploadedImageUrl && isEditMode) {
+      setPreviewUrl(uploadedImageUrl);
+    }
+  }, [uploadedImageUrl, isEditMode]);
 
   return (
     <div className="w-full max-w-md mx-auto mt-4">
@@ -105,60 +122,56 @@ function ProductImageUpload({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-4 mb-4 relative cursor-pointer ${
-          loading ? "opacity-60" : ""
+          loading || isEditMode ? "opacity-60" : ""
         }`}
       >
-        {/* Hidden input */}
         <Input
           className="hidden"
           id="image-upload"
           type="file"
           ref={inputRef}
-          disabled={loading}
+          disabled={loading || isEditMode} 
           onChange={handleImageFileChange}
         />
 
-        {/* No image yet: show upload prompt */}
-        {!imageFile ? (
+        {!previewUrl ? (
           <Label
             htmlFor="image-upload"
-            className="flex flex-col items-center justify-center h-32 cursor-pointer"
+            className={`${isEditMode? 'cursor-not-allowed': ""}flex flex-col items-center justify-center h-32 cursor-pointer`}
           >
             <CloudUpload className="w-10 h-10 text-muted-foreground mb-2" />
             <span>Drag & drop or click to upload image</span>
           </Label>
         ) : (
           <>
-            {/* File Name */}
             <div className="flex items-center mb-3">
               <FileIcon className="w-8 h-8 text-primary mr-2" />
               <p className="text-sm font-medium">
-                {truncateFileName(imageFile.name)}
+                {truncateFileName(imageFile?.name || "Current Image")}
               </p>
             </div>
 
-            {/* Skeleton or Actual Image */}
             {loading ? (
               <Skeleton className="w-full aspect-square rounded-md bg-gray-300" />
             ) : (
-              uploadedImageUrl && (
-                <img
-                  src={uploadedImageUrl}
-                  alt="Preview"
-                  className="w-full aspect-square object-cover rounded-md border"
-                />
-              )
+              <img
+                src={previewUrl}
+                alt="Preview"
+                className="w-full aspect-square object-cover rounded-md border"
+              />
             )}
 
-            {/* Remove Button */}
             <Button
               variant="ghost"
               size="icon"
               className="absolute top-2 right-2 hover:text-red-600"
               onClick={handleRemoveImage}
-              disabled={loading}
+              disabled={loading || isEditMode} 
             >
-              <XIcon className="w-4 h-4 text-red-500" />
+              {
+                isEditMode ? ( <CircleX className="w-4 h-4 text-red-500" />) : (<XIcon className="w-4 h-4 text-red-500" />)
+              }
+              
             </Button>
           </>
         )}
