@@ -113,6 +113,7 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
+      
     },
   },
   extraReducers: (builder) => {
@@ -172,6 +173,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user =  null;
         state.isAuthenticated = false;
+        state.error = null;
       });
   },
 });
