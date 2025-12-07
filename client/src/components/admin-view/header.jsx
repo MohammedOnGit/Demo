@@ -28,28 +28,36 @@ function AdminHeader({ setOpen }) {
   return (
     <>
       {/* ✅ HEADER */}
-      <header className="flex items-center justify-between px-4 py-3 border-b bg-white">
-        <Button
-          onClick={() => setOpen(true)}
-          className="lg:hidden sm:inline-flex"
-          size="icon"
-          variant="outline"
-        >
-          <Menu className="w-5 h-5" />
-          <span className="sr-only">Toggle menu</span>
-        </Button>
+      <header className="flex items-center justify-between px-3 sm:px-4 md:px-6 py-3 border-b bg-white">
+  {/* ✅ MOBILE MENU BUTTON */}
+  <Button
+    onClick={() => setOpen(true)}
+    className="inline-flex lg:hidden"
+    size="icon"
+    variant="outline"
+  >
+    <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+    <span className="sr-only">Toggle menu</span>
+  </Button>
 
-        <div className="flex flex-1 justify-end">
-          <Button
-            onClick={() => setOpenLogoutDialog(true)}
-            className="inline-flex gap-2 items-center rounded-md px-4 py-2 text-sm font-medium shadow"
-            variant="destructive"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
-        </div>
-      </header>
+  {/* ✅ RIGHT SIDE (LOGOUT BUTTON) */}
+  <div className="flex flex-1 justify-end">
+    <Button
+      onClick={() => setOpenLogoutDialog(true)}
+      className="
+        inline-flex items-center gap-2 
+        rounded-md shadow 
+        px-3 py-2 text-xs 
+        sm:px-4 sm:py-2 sm:text-sm
+      "
+      variant="destructive"
+    >
+      <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+      <span className="hidden sm:inline">Logout</span>
+    </Button>
+  </div>
+</header>
+
 
       {/* ✅ LOGOUT CONFIRMATION DIALOG */}
       <Dialog open={openLogoutDialog} onOpenChange={setOpenLogoutDialog}>

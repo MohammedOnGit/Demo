@@ -121,7 +121,7 @@ function ProductImageUpload({
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-lg p-4 mb-4 relative cursor-pointer ${
+        className={`border-2 border-dashed rounded-lg p-4 mb-4 relative cursor-not-allowed ${
           loading || isEditMode ? "opacity-60" : ""
         }`}
       >
