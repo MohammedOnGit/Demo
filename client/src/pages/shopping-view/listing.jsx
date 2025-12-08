@@ -13,6 +13,22 @@ import { sortOptions } from "@/config";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAllFilteredProducts } from "@/store/shop/products-slice";
 import ShoppingProductTile from "./product-tile";
+import { useSearchParams } from "react-router-dom";
+
+// -------------------------------------------
+// FIXED: Create Search Params Helper
+// -------------------------------------------
+function createSearchParamsHelper(filters) {
+  const queryParams = [];
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (Array.isArray(value) && value.length > 0) {
+      queryParams.push(`${key}=${encodeURIComponent(value.join(","))}`);
+    }
+  }
+
+  return queryParams.join("&");
+}
 
 function ShopListing() {
   const dispatch = useDispatch();
@@ -20,98 +36,115 @@ function ShopListing() {
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("price-lowtohigh");
 
+  // FIXED: correct useSearchParams usage
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // -------------------------------------------
+  // Handle Sorting
+  // -------------------------------------------
   function handleSort(value) {
     setSort(value);
     sessionStorage.setItem("shop-sort", value);
   }
 
-  function handleFilter(getSectionId, getCurrentOption) {
-    let copyFilters = { ...filters };
+  // -------------------------------------------
+  // Handle Filtering
+  // -------------------------------------------
+  function handleFilter(section, optionId) {
+    let newFilters = { ...filters };
 
-    // Check if section exists
-    const sectionExists = Object.keys(copyFilters).includes(getSectionId);
-
-    if (!sectionExists) {
-      copyFilters[getSectionId] = [getCurrentOption];
+    if (!newFilters[section]) {
+      newFilters[section] = [optionId];
     } else {
-      const options = copyFilters[getSectionId];
-      const index = options.indexOf(getCurrentOption);
+      const exists = newFilters[section].includes(optionId);
 
-      if (index === -1) {
-        options.push(getCurrentOption);
+      if (exists) {
+        newFilters[section] = newFilters[section].filter((id) => id !== optionId);
       } else {
-        options.splice(index, 1);
+        newFilters[section].push(optionId);
       }
 
-      if (options.length === 0) {
-        delete copyFilters[getSectionId];
+      if (newFilters[section].length === 0) {
+        delete newFilters[section];
       }
     }
 
-    setFilters(copyFilters);
-    sessionStorage.setItem("shop-filters", JSON.stringify(copyFilters));
+    setFilters(newFilters);
+    sessionStorage.setItem("shop-filters", JSON.stringify(newFilters));
   }
 
-  // Load Saved filters + sort
+  // -------------------------------------------
+  // Load Saved Filters + Sort
+  // -------------------------------------------
   useEffect(() => {
-    const savedFilters =
-      JSON.parse(sessionStorage.getItem("shop-filters")) || {};
+    const savedFilters = JSON.parse(sessionStorage.getItem("shop-filters")) || {};
     const savedSort = sessionStorage.getItem("shop-sort") || "price-lowtohigh";
 
     setFilters(savedFilters);
     setSort(savedSort);
   }, []);
 
-  // Fetch products whenever filters or sort change
+  // -------------------------------------------
+  // Update URL Query when Filters Change
+  // -------------------------------------------
   useEffect(() => {
-    dispatch(fetchAllFilteredProducts({ filters, sort }));
+    const queryString = createSearchParamsHelper(filters);
+    setSearchParams(new URLSearchParams(queryString));
+  }, [filters, setSearchParams]);
+
+  // -------------------------------------------
+  // Fetch Products
+  // -------------------------------------------
+  useEffect(() => {
+    if(filters !== null && sort !== null)
+    dispatch(fetchAllFilteredProducts({ filterParams: filters, sortParam: sort }));
+    
   }, [dispatch, filters, sort]);
 
-  // Safe selector
-  const { products = [] } = useSelector((state) => state.shopProducts || {});
+  const { products = [] } = useSelector(
+    (state) => state.shopProducts || {}
+  );
 
   return (
     <div
       className="
-        grid
-        grid-cols-1
-        md:grid-cols-[130px_1fr]
-        lg:grid-cols-[260px_1fr]
-        gap-4
-        md:gap-6
-        p-3
-        sm:p-4
-        md:p-6
-      "
+      grid
+      grid-cols-1
+      md:grid-cols-[130px_1fr]
+      lg:grid-cols-[260px_1fr]
+      gap-4
+      md:gap-6
+      p-3
+      sm:p-4
+      md:p-6
+    "
     >
-      {/* FILTER SIDEBAR */}
+      {/* Filter Sidebar */}
       <div className="w-full lg:sticky lg:top-24 h-fit">
         <ProductFilter filters={filters} handleFilter={handleFilter} />
       </div>
 
-      {/* PRODUCT SECTION */}
+      {/* Product Section */}
       <div className="bg-background w-full rounded-xl shadow-sm overflow-hidden">
         <div
           className="
-            flex
-            flex-col
-            sm:flex-row
-            sm:items-center
-            sm:justify-between
-            gap-3
-            p-3
-            sm:p-4
-            border-b
-          "
+          flex
+          flex-col
+          sm:flex-row
+          sm:items-center
+          sm:justify-between
+          gap-3
+          p-3
+          sm:p-4
+          border-b
+        "
         >
-          <h2 className="text-xl font-semibold tracking-tight">
-            All Products
-          </h2>
+          <h2 className="text-xl font-semibold tracking-tight">All Products</h2>
 
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm sm:text-base">{products.length} products</p>
 
-            {/* SORT DROPDOWN */}
+            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -139,28 +172,25 @@ function ShopListing() {
           </div>
         </div>
 
-        {/* PRODUCT GRID */}
+        {/* Product Grid */}
         <div
           className="
-            grid
-            grid-cols-1
-            sm:grid-cols-2
-            md:grid-cols-3
-            lg:grid-cols-4
-            gap-4
-            sm:gap-5
-            md:gap-6
-            p-3
-            sm:p-4
-            md:p-6
-          "
+          grid
+          grid-cols-1
+          sm:grid-cols-2
+          md:grid-cols-3
+          lg:grid-cols-4
+          gap-4
+          sm:gap-5
+          md:gap-6
+          p-3
+          sm:p-4
+          md:p-6
+        "
         >
           {products.length > 0 ? (
-            products.map((productItem) => (
-              <ShoppingProductTile
-                key={productItem._id}
-                product={productItem}
-              />
+            products.map((product) => (
+              <ShoppingProductTile key={product._id} product={product} />
             ))
           ) : (
             <p className="col-span-full text-center text-muted-foreground">
