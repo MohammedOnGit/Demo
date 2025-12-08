@@ -146,7 +146,7 @@ function ProductImageUpload({
           <>
             <div className="flex items-center mb-3">
               <FileIcon className="w-8 h-8 text-primary mr-2" />
-              <p className="text-sm font-medium">
+              <p className="text-sm leading-none font-medium">
                 {truncateFileName(imageFile?.name || "Current Image")}
               </p>
             </div>

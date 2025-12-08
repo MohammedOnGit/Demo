@@ -81,7 +81,8 @@ function HeaderRightContent() {
 
             <div className="flex flex-col items-center px-4 pb-2">
               <span className="font-bold">{user?.userName}</span>
-              <span className="text-xs">{user?.email}</span>
+              <p className="text-muted-foreground text-sm">{user?.email}</p>
+              
             </div>
 
             <DropdownMenuSeparator />

@@ -9,6 +9,7 @@ const rateLimit = require("express-rate-limit");
 
 const authRouter = require("./routes/auth/auth-routes"); 
 const adminProductRoutes = require("./routes/admin/product-routes");
+const shopProductsRoutes = require('./routes/shop/products-routes')
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,7 @@ mongoose
 // Routes
 app.use("/api/auth", authRouter);
 app.use("/api/admin/products", adminProductRoutes);
+app.use("/api/shop/products", shopProductsRoutes)
 
 app.get("/", (req, res) => res.json({ message: "API running..." }));
 

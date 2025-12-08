@@ -101,7 +101,7 @@ function AdminProducts() {
   }
 
   function isProductListEmpty() {
-     return !products || products.length === 0;
+    return !products || products.length === 0;
   }
 
   const isFormInvalid =
@@ -115,7 +115,6 @@ function AdminProducts() {
           onClick={() => {
             resetForm();
             setOpenCreateProductDialog(true);
-          
           }}
           className={`${
             isProductListEmpty() ? "hidden " : ""
@@ -126,44 +125,47 @@ function AdminProducts() {
       </div>
 
       {/* ✅ ✅ ✅ PRODUCTS GRID / EMPTY STATE */}
-<div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 min-h-[70vh]">
-  {!isProductListEmpty() ? (
-    products.map((product) => (
-      <AdminProductTile
-        key={product._id}
-        product={product}
-        setCurrentEditedId={setCurrentEditedId}
-        setOpenCreateProductDialog={setOpenCreateProductDialog}
-        setFormData={setFormData}
-        isEditMode={currentEditedId === product._id}
-        handleDelete={handleDelete}
-      />
-    ))
-  ) : (
-    // ✅ PERFECTLY CENTERED EMPTY STATE
-    <div className="col-span-full flex items-center justify-center">
-      <div className="flex flex-col items-center text-center text-gray-500">
-        <PackageOpen size={90} className="mb-4 text-gray-400" />
-        <h2 className="text-xl font-semibold text-gray-700">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 min-h-[70vh]">
+        {!isProductListEmpty() ? (
+          products.map((product) => (
+            <AdminProductTile
+              key={product._id}
+              product={product}
+              setCurrentEditedId={setCurrentEditedId}
+              setOpenCreateProductDialog={setOpenCreateProductDialog}
+              setFormData={setFormData}
+              isEditMode={currentEditedId === product._id}
+              handleDelete={handleDelete}
+            />
+          ))
+        ) : (
+          // ✅ PERFECTLY CENTERED EMPTY STATE
+          <div className="col-span-full flex items-center justify-center">
+            <div className="flex flex-col items-center text-center text-gray-500">
+              <PackageOpen size={90} className="mb-4 text-gray-400" />
+              {/* <h2 className="text-xl font-semibold text-gray-700">
           No products available
-        </h2>
-        <p className="mt-2 text-sm">
-          Click below to add your first product
-        </p>
-        <button
-          className="mt-5 px-5 py-2 bg-black text-white rounded"
-          onClick={() => {
-            resetForm();
-            setOpenCreateProductDialog(true);
-          }}
-        >
-          ➕ Add First Product
-        </button>
-      </div>
-    </div>
-  )}
-</div>
+        </h2> */}
+              <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+                No products available
+              </h2>
 
+              <p className="mt-2 text-sm">
+                Click below to add your first product
+              </p>
+              <button
+                className="mt-5 px-5 py-2 bg-black text-white rounded"
+                onClick={() => {
+                  resetForm();
+                  setOpenCreateProductDialog(true);
+                }}
+              >
+                ➕ Add First Product
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ✅ ✅ ✅ SHEET (ADD / EDIT FORM) */}
       <Sheet
