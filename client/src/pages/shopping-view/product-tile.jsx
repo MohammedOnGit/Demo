@@ -96,10 +96,12 @@ function ShoppingProductTile({ product }) {
     hover:shadow-xl 
     transition-all
     bg-white
+    has
+    h-6/6
   "
       >
         {/* ✅ Image Section */}
-        <div className="relative w-full aspect-[4/3] sm:aspect-[3/4] md:aspect-square">
+        <div className="relative w-full aspect-[3/3] sm:aspect-[3/4] md:aspect-[4/4] pt-0">
           <img
             src={product?.image}
             alt={product?.title}
@@ -115,7 +117,7 @@ function ShoppingProductTile({ product }) {
 
         {/* ✅ Content Section */}
         <div className="p-3 sm:p-4 md:p-5">
-          <h2 className="text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 line-clamp-2">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 line-clamp-2 bg-red-600 h-full max-h-16">
             {product?.title}
           </h2>
 
