@@ -1,38 +1,4 @@
-// const { createSlice, createAsyncThunk } = require("@reduxjs/toolkit");
-// const { builder } = require("vite");
-
-// const initialState = {
-//   isLoading : false,
-//   products: [],
-// }
-
-// export const fetchAllFilteredProducts = createAsyncThunk(
-//   "/products/fetchAllProducts",
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const result = await axios.get(
-//         "http://localhost:5000/api/shop/products/get"
-//       );
-//       return result.data?.data || result.data;
-//     } catch (error) {
-//       return rejectWithValue(error.response?.data || error.message);
-//     }
-//   }
-// );
-
-// const shoppingProductsSlice = createSlice({
-//   name : "shopppingProducts",
-//   initialState,
-//   reducers : {},
-//   extraReducers: (builder)=>{
-//    builder.addCase(fetchAllFilteredProducts.pending,(state, action)=>{
-//     state.isLoading = true;
-//    }
-//   }
-// })
-
-// src/features/products/shoppingProductsSlice.js
-
+// src/store/shop/shoppingProductsSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -42,31 +8,34 @@ const initialState = {
   error: null,
 };
 
-// Async thunk – fetch all products from backend
+// Fetch products with filters + sorting
 export const fetchAllFilteredProducts = createAsyncThunk(
-  "shoppingProducts/fetchAllProducts", // clean action name
-  async (_, { rejectWithValue }) => {
+  "shoppingProducts/fetchAllProducts",
+  async ({ filterParams = {}, sortParam = "price-lowtohigh" }, thunkAPI) => {
     try {
+      const query = new URLSearchParams({
+        ...filterParams,
+        sortBy: sortParam,
+      });
+
       const response = await axios.get(
-        "http://localhost:5000/api/shop/products/get"
+        `http://localhost:5000/api/shop/products/get?${query}`
       );
 
-      // Adjust this line based on your actual API response structure
-      return response.data?.data || response.data; // most common patterns
+      return response.data?.data || response.data;
     } catch (error) {
       const message =
         error.response?.data?.message ||
         error.response?.data ||
         error.message ||
         "Failed to fetch products";
-      return rejectWithValue(message);
+      return thunkAPI.rejectWithValue(message);
     }
   }
 );
 
-// Slice
 const shoppingProductsSlice = createSlice({
-  name: "shoppingProducts", // fixed typo: shoppping → shopping
+  name: "shoppingProducts",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -75,26 +44,22 @@ const shoppingProductsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Pending → loading
       .addCase(fetchAllFilteredProducts.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      // Success → save products
       .addCase(fetchAllFilteredProducts.fulfilled, (state, action) => {
         state.isLoading = false;
         state.products = action.payload;
         state.error = null;
       })
-      // Failed → save error
       .addCase(fetchAllFilteredProducts.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || "Something went wrong";
-        state.products = []; // optional: clear old data on error
+        state.products = [];
       });
   },
 });
 
-// Export actions and reducer
 export const { clearError } = shoppingProductsSlice.actions;
 export default shoppingProductsSlice.reducer;

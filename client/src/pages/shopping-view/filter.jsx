@@ -6,7 +6,6 @@ import React, { Fragment } from "react";
 function ProductFilter({ filters, handleFilter }) {
   return (
     <div className="w-26 md:w-36 rounded-lg shadow-md border bg-white overflow-hidden">
-      
       {/* Header */}
       <div className="px-4 py-3 sm:px-5 sm:py-4 border-b">
         <h2 className="text-sm sm:text-base font-semibold tracking-tight">
@@ -19,8 +18,6 @@ function ProductFilter({ filters, handleFilter }) {
         {Object.keys(filterOptions).map((keyItem) => (
           <Fragment key={keyItem}>
             <div className="flex flex-col">
-              
-              {/* Filter Group Title */}
               <h3 className="text-base sm:text-xl font-semibold tracking-tight">
                 {keyItem}
               </h3>
@@ -28,19 +25,20 @@ function ProductFilter({ filters, handleFilter }) {
               <div className="grid gap-2">
                 {filterOptions[keyItem].map((option, index) => {
                   const isChecked =
-                    filters?.[keyItem]?.includes(option.id) || false;
+                    filters &&
+                    filters[keyItem] &&
+                    filters[keyItem].includes(option.id);
 
                   return (
                     <div
                       key={`${keyItem}-${index}`}
                       className="flex items-center space-x-2"
                     >
+                      {/* ✅ Use the imported Checkbox component */}
                       <Checkbox
                         id={`${keyItem}-${index}`}
                         checked={isChecked}
-                        onCheckedChange={() =>
-                          handleFilter(keyItem, option.id)
-                        }
+                        onCheckedChange={() => handleFilter(keyItem, option.id)}
                       />
 
                       <label
