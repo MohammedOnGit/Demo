@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
   getFilteredProducts,
+  getProductDetails,
 } = require("../../controllers/shop/product-controller");
 
 
@@ -10,5 +11,8 @@ const {
 // router.get("/all", getFilteredProducts);
 
 router.get("/get", getFilteredProducts);
+
+router.get("/get/:productId", getProductDetails);
+
 
 module.exports = router;

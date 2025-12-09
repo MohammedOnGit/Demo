@@ -24,21 +24,24 @@ function ProductFilter({ filters, handleFilter }) {
 
               <div className="grid gap-2">
                 {filterOptions[keyItem].map((option, index) => {
-                  const isChecked =
-                    filters &&
-                    filters[keyItem] &&
-                    filters[keyItem].includes(option.id);
+                  
+                  // ALWAYS return a boolean (no undefined!)
+                  const isChecked = !!(
+                    filters?.[keyItem] &&
+                    filters[keyItem].includes(option.id)
+                  );
 
                   return (
                     <div
                       key={`${keyItem}-${index}`}
                       className="flex items-center space-x-2"
                     >
-                      {/* ✅ Use the imported Checkbox component */}
                       <Checkbox
                         id={`${keyItem}-${index}`}
-                        checked={isChecked}
-                        onCheckedChange={() => handleFilter(keyItem, option.id)}
+                        checked={isChecked}          // always boolean
+                        onCheckedChange={() =>
+                          handleFilter(keyItem, option.id)
+                        }
                       />
 
                       <label

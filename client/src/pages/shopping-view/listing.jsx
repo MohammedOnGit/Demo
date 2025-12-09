@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { sortOptions } from "@/config";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllFilteredProducts } from "@/store/shop/products-slice";
+import { fetchAllFilteredProducts, fetchProductDetails } from "@/store/shop/products-slice";
 import ShoppingProductTile from "./product-tile";
 import { useSearchParams } from "react-router-dom";
 
 // -------------------------------------------
-// FIXED: Create Search Params Helper
+// Search Params Helper
 // -------------------------------------------
 function createSearchParamsHelper(filters) {
   const queryParams = [];
@@ -36,11 +36,20 @@ function ShopListing() {
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("price-lowtohigh");
 
-  // FIXED: correct useSearchParams usage
   const [searchParams, setSearchParams] = useSearchParams();
 
   // -------------------------------------------
-  // Handle Sorting
+  // GET from Redux Store (FIXED)
+  // -------------------------------------------
+  const { products = [], productDetails = null } = useSelector(
+    (state) => state.shopProducts || {}
+  );
+
+  // ✅ LOG PRODUCT DETAILS SAFELY
+  console.log("Product Details:", productDetails);
+
+  // -------------------------------------------
+  // Sorting
   // -------------------------------------------
   function handleSort(value) {
     setSort(value);
@@ -48,7 +57,16 @@ function ShopListing() {
   }
 
   // -------------------------------------------
-  // Handle Filtering
+  // Handle Product Details Click
+  // -------------------------------------------
+  function handleGetProductDetails(getCurrentProductId) {
+    console.log("Product ID:", getCurrentProductId);
+
+    dispatch(fetchProductDetails({ productId: getCurrentProductId }));
+  }
+
+  // -------------------------------------------
+  // Filtering Logic
   // -------------------------------------------
   function handleFilter(section, optionId) {
     let newFilters = { ...filters };
@@ -74,7 +92,7 @@ function ShopListing() {
   }
 
   // -------------------------------------------
-  // Load Saved Filters + Sort
+  // Load Saved Filters
   // -------------------------------------------
   useEffect(() => {
     const savedFilters = JSON.parse(sessionStorage.getItem("shop-filters")) || {};
@@ -85,7 +103,7 @@ function ShopListing() {
   }, []);
 
   // -------------------------------------------
-  // Update URL Query when Filters Change
+  // Update URL Query
   // -------------------------------------------
   useEffect(() => {
     const queryString = createSearchParamsHelper(filters);
@@ -96,14 +114,8 @@ function ShopListing() {
   // Fetch Products
   // -------------------------------------------
   useEffect(() => {
-    if(filters !== null && sort !== null)
     dispatch(fetchAllFilteredProducts({ filterParams: filters, sortParam: sort }));
-    
   }, [dispatch, filters, sort]);
-
-  const { products = [] } = useSelector(
-    (state) => state.shopProducts || {}
-  );
 
   return (
     <div
@@ -119,12 +131,12 @@ function ShopListing() {
       md:p-6
     "
     >
-      {/* Filter Sidebar */}
+      {/* Sidebar */}
       <div className="w-full lg:sticky lg:top-24 h-fit">
         <ProductFilter filters={filters} handleFilter={handleFilter} />
       </div>
 
-      {/* Product Section */}
+      {/* Products Section */}
       <div className="bg-background w-full rounded-xl shadow-sm overflow-hidden">
         <div
           className="
@@ -144,7 +156,6 @@ function ShopListing() {
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm sm:text-base">{products.length} products</p>
 
-            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -190,7 +201,11 @@ function ShopListing() {
         >
           {products.length > 0 ? (
             products.map((product) => (
-              <ShoppingProductTile key={product._id} product={product} />
+              <ShoppingProductTile
+                handleGetProductDetails={handleGetProductDetails}
+                key={product._id}
+                product={product}
+              />
             ))
           ) : (
             <p className="col-span-full text-center text-muted-foreground">
