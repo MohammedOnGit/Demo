@@ -45,7 +45,7 @@ function App() {
     dispatch(checkAuth()); // ✅ run checkAuth when app loads
   }, [dispatch]);
 
-  if(isLoading) return <Skeleton className="h-[800px] w-[800px]" />;
+  if(isLoading) return <Skeleton className="h-full w-full" />;
 
   return (
     <div>

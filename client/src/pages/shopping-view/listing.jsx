@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ProductFilter from "./filter";
+import ProductFilter from "../../components/shoping-view/filter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,15 @@ import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { sortOptions } from "@/config";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllFilteredProducts, fetchProductDetails } from "@/store/shop/products-slice";
-import ShoppingProductTile from "./product-tile";
+import {
+  fetchAllFilteredProducts,
+  fetchProductDetails,
+} from "@/store/shop/products-slice";
+import ShoppingProductTile from "../../components/shoping-view/product-tile";
 import { useSearchParams } from "react-router-dom";
+
+// ✅ Import your Product Details Dialog correctly (EDIT THIS PATH)
+import ProductDetails from "../../components/shoping-view/product-details";
 
 // -------------------------------------------
 // Search Params Helper
@@ -35,18 +41,15 @@ function ShopListing() {
 
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("price-lowtohigh");
-
   const [searchParams, setSearchParams] = useSearchParams();
+  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
 
   // -------------------------------------------
-  // GET from Redux Store (FIXED)
+  // GET from Redux Store
   // -------------------------------------------
   const { products = [], productDetails = null } = useSelector(
     (state) => state.shopProducts || {}
   );
-
-  // ✅ LOG PRODUCT DETAILS SAFELY
-  console.log("Product Details:", productDetails);
 
   // -------------------------------------------
   // Sorting
@@ -59,17 +62,16 @@ function ShopListing() {
   // -------------------------------------------
   // Handle Product Details Click
   // -------------------------------------------
-  function handleGetProductDetails(getCurrentProductId) {
-    console.log("Product ID:", getCurrentProductId);
-
-    dispatch(fetchProductDetails({ productId: getCurrentProductId }));
+  function handleGetProductDetails(productId) {
+    console.log("Product ID:", productId);
+    dispatch(fetchProductDetails({ productId }));
   }
 
   // -------------------------------------------
   // Filtering Logic
   // -------------------------------------------
   function handleFilter(section, optionId) {
-    let newFilters = { ...filters };
+    const newFilters = { ...filters };
 
     if (!newFilters[section]) {
       newFilters[section] = [optionId];
@@ -92,7 +94,7 @@ function ShopListing() {
   }
 
   // -------------------------------------------
-  // Load Saved Filters
+  // Load Saved Filters + Sort
   // -------------------------------------------
   useEffect(() => {
     const savedFilters = JSON.parse(sessionStorage.getItem("shop-filters")) || {};
@@ -114,8 +116,22 @@ function ShopListing() {
   // Fetch Products
   // -------------------------------------------
   useEffect(() => {
-    dispatch(fetchAllFilteredProducts({ filterParams: filters, sortParam: sort }));
+    dispatch(
+      fetchAllFilteredProducts({
+        filterParams: filters,
+        sortParam: sort,
+      })
+    );
   }, [dispatch, filters, sort]);
+
+  // -------------------------------------------
+  // Open product details dialog when data loads
+  // -------------------------------------------
+  useEffect(() => {
+    if (productDetails) {
+      setOpenDetailsDialog(true);
+    }
+  }, [productDetails]);
 
   return (
     <div
@@ -170,10 +186,7 @@ function ShopListing() {
               <DropdownMenuContent align="end" className="w-[175px]">
                 <DropdownMenuRadioGroup onValueChange={handleSort} value={sort}>
                   {sortOptions.map((sortItem) => (
-                    <DropdownMenuRadioItem
-                      value={sortItem.id}
-                      key={sortItem.id}
-                    >
+                    <DropdownMenuRadioItem value={sortItem.id} key={sortItem.id}>
                       {sortItem.label}
                     </DropdownMenuRadioItem>
                   ))}
@@ -202,9 +215,9 @@ function ShopListing() {
           {products.length > 0 ? (
             products.map((product) => (
               <ShoppingProductTile
-                handleGetProductDetails={handleGetProductDetails}
                 key={product._id}
                 product={product}
+                handleGetProductDetails={handleGetProductDetails}
               />
             ))
           ) : (
@@ -214,6 +227,13 @@ function ShopListing() {
           )}
         </div>
       </div>
+
+      {/* FIXED: Correct Component Name */}
+      <ProductDetails
+        open={openDetailsDialog}
+        setOpen={setOpenDetailsDialog}
+        productDetails={productDetails}
+      />
     </div>
   );
 }
