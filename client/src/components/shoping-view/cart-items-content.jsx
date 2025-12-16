@@ -1,15 +1,16 @@
 import React from "react";
-import { useDispatch, useSelector } from "react-redux"; // ✅ FIXED IMPORT
-
+import { useDispatch, useSelector } from "react-redux";
 import { Minus, Plus, TrashIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { deleteCartItem } from "@/store/shop/cart-slice";
+import { deleteCartItem, updateCartQuantity } from "@/store/shop/cart-slice";
+import { toast } from "sonner";
 
 function UserCartItemsContent({ cartItem }) {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
-  function handleCartItemDelete(item) {
+  /* ------------------ DELETE ITEM ------------------ */
+  const handleCartItemDelete = (item) => {
     if (!user?.id || !item?.productId) return;
 
     dispatch(
@@ -17,8 +18,44 @@ function UserCartItemsContent({ cartItem }) {
         userId: user.id,
         productId: item.productId,
       })
-    );
-  }
+    ).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        toast.success("Item removed from cart"); // top-right from global Toaster
+      } else {
+        toast.error("Failed to remove item");
+      }
+    });
+  };
+
+  /* ------------------ UPDATE QUANTITY ------------------ */
+  const handleUpdateQuantity = (item, actionType) => {
+    if (!user?.id || !item?.productId) return;
+
+    // Prevent quantity going below 1
+    if (actionType === "decrement" && item.quantity === 1) {
+      toast.warning("Minimum quantity is 1");
+      return;
+    }
+
+    const updatedQuantity =
+      actionType === "increment"
+        ? item.quantity + 1
+        : item.quantity - 1;
+
+    dispatch(
+      updateCartQuantity({
+        userId: user.id,
+        productId: item.productId,
+        quantity: updatedQuantity,
+      })
+    ).then((res) => {
+      if (res.meta.requestStatus === "fulfilled") {
+        toast.success("Cart quantity updated");
+      } else {
+        toast.error("Failed to update quantity");
+      }
+    });
+  };
 
   return (
     <div className="flex items-center space-x-4">
@@ -35,9 +72,11 @@ function UserCartItemsContent({ cartItem }) {
 
         <div className="flex items-center mt-2 gap-2">
           <Button
+            onClick={() => handleUpdateQuantity(cartItem, "decrement")}
             variant="outline"
             size="icon"
             className="h-8 w-8 rounded-full"
+            disabled={cartItem?.quantity === 1}
           >
             <Minus className="w-4 h-4" />
           </Button>
@@ -45,6 +84,7 @@ function UserCartItemsContent({ cartItem }) {
           <span className="font-semibold">{cartItem?.quantity}</span>
 
           <Button
+            onClick={() => handleUpdateQuantity(cartItem, "increment")}
             variant="outline"
             size="icon"
             className="h-8 w-8 rounded-full"

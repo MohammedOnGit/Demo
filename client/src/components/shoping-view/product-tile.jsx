@@ -54,9 +54,7 @@ function ShoppingProductTile({
         <div className="flex justify-between items-center">
           <span
             className={`text-lg font-semibold ${
-              product?.salePrice > 0
-                ? "line-through text-muted-foreground"
-                : ""
+              product?.salePrice > 0 ? "line-through text-muted-foreground" : ""
             }`}
           >
             ₵{product?.price?.toFixed(2)}
@@ -79,10 +77,7 @@ function ShoppingProductTile({
           Add to cart
         </Button> */}
 
-<Button onClick={() => handleAddtoCart(product)}>
-  Add to Cart
-</Button>
-
+        <Button onClick={() => handleAddtoCart(product)}>Add to Cart</Button>
       </CardFooter>
     </Card>
   );

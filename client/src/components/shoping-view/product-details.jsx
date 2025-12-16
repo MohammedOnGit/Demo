@@ -16,7 +16,7 @@ function ProductDetailsDialog({
   open,
   setOpen,
   productDetails,
-  handleAddtoCart,
+  handleAddtoCart, // <-- must come from parent
 }) {
   if (!productDetails) return null;
 
@@ -31,6 +31,7 @@ function ProductDetailsDialog({
           rounded-xl
         "
       >
+        {/* HEADER */}
         <DialogHeader className="col-span-full">
           <DialogTitle className="text-2xl font-bold">
             {productDetails.title}
@@ -40,7 +41,7 @@ function ProductDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Image */}
+        {/* IMAGE */}
         <div className="aspect-square rounded-xl overflow-hidden">
           <img
             src={productDetails.image}
@@ -49,7 +50,7 @@ function ProductDetailsDialog({
           />
         </div>
 
-        {/* Details */}
+        {/* DETAILS */}
         <div className="flex flex-col justify-between">
           <div>
             <p className="text-muted-foreground mb-4">
@@ -57,9 +58,7 @@ function ProductDetailsDialog({
             </p>
 
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-2xl font-bold">
-                ₵{productDetails.price}
-              </span>
+              <span className="text-2xl font-bold">₵{productDetails.price}</span>
 
               {productDetails.salePrice > 0 && (
                 <span className="text-2xl font-bold text-green-600">
@@ -67,13 +66,6 @@ function ProductDetailsDialog({
                 </span>
               )}
             </div>
-
-            {/* <Button
-              className="w-full"
-              onClick={() => handleAddtoCart(productDetails._id)}
-            >
-              Add to Cart
-            </Button> */}
 
             <Button onClick={() => handleAddtoCart(productDetails)}>
               Add to Cart
@@ -91,7 +83,7 @@ function ProductDetailsDialog({
 
           <Separator className="my-6" />
 
-          {/* Reviews */}
+          {/* REVIEWS */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Reviews</h3>
 
