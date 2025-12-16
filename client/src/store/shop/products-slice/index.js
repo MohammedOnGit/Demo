@@ -40,8 +40,7 @@ export const fetchProductDetails = createAsyncThunk(
   "shoppingProducts/fetchProductDetails",
   async ({ productId }, thunkAPI) => {
     try {
-     
-
+    
       const response = await axios.get(
         `http://localhost:5000/api/shop/products/get/${productId}`
       );

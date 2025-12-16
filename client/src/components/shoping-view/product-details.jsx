@@ -12,8 +12,13 @@ import { StarIcon } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 
-function ProductDetailsDialog({ open, setOpen, productDetails }) {
-  const product = productDetails || {};
+function ProductDetailsDialog({
+  open,
+  setOpen,
+  productDetails,
+  handleAddtoCart,
+}) {
+  if (!productDetails) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -26,157 +31,91 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
           rounded-xl
         "
       >
-        {/* Header */}
         <DialogHeader className="col-span-full">
-          <DialogTitle className="text-2xl font-bold tracking-tight">
-            {product.title || "Product Details"}
+          <DialogTitle className="text-2xl font-bold">
+            {productDetails.title}
           </DialogTitle>
-
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription>
             See full product details, pricing and description.
           </DialogDescription>
         </DialogHeader>
 
-        {/* LEFT — IMAGE */}
-        <div className="relative w-full">
-          <div className="aspect-square w-full rounded-xl overflow-hidden bg-muted">
-            <img
-              src={product.image}
-              alt={product.title}
-              className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-            />
-          </div>
+        {/* Image */}
+        <div className="aspect-square rounded-xl overflow-hidden">
+          <img
+            src={productDetails.image}
+            alt={productDetails.title}
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* RIGHT — DETAILS */}
+        {/* Details */}
         <div className="flex flex-col justify-between">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-              {product.title || "Loading..."}
-            </h2>
-
-            <p className="text-muted-foreground leading-relaxed">
-              {product.description ||
-                "No description available for this product."}
+            <p className="text-muted-foreground mb-4">
+              {productDetails.description}
             </p>
-          </div>
 
-          {/* Pricing */}
-          <div className="mt-6 space-y-2">
-            <div className="flex items-center gap-3">
-              <span
-                className={`
-                  text-3xl font-bold 
-                  ${
-                    product.salePrice > 0
-                      ? "line-through text-muted-foreground"
-                      : "text-primary"
-                  }
-                `}
-              >
-                ${product.price || "0.00"}
+            <div className="flex items-center gap-4 mb-4">
+              <span className="text-2xl font-bold">
+                ₵{productDetails.price}
               </span>
 
-              {product.salePrice > 0 && (
-                <span className="text-3xl font-bold text-green-600">
-                  ${product.salePrice}
+              {productDetails.salePrice > 0 && (
+                <span className="text-2xl font-bold text-green-600">
+                  ₵{productDetails.salePrice}
                 </span>
               )}
             </div>
 
-            <div className="items-center gap-2">
-              <div className="flex items-center gap-0.5 ">
-                <StarIcon className="fill-primary w-5 h-5" />
-                <StarIcon className="fill-primary w-5 h-5" />
-                <StarIcon className="fill-primary w-5 h-5" />
-                <StarIcon className="fill-primary w-5 h-5" />
-                <StarIcon className="fill-primary w-5 h-5" />
-                <span className="text-muted-forground">{4.5}</span>
-              </div>
-            </div>
-
-            {/* CTA BUTTON */}
-            <button
-              className="
-                mt-5 w-full py-3 
-                rounded-lg bg-primary text-white font-semibold 
-                hover:bg-primary/90 transition
-              "
+            {/* <Button
+              className="w-full"
+              onClick={() => handleAddtoCart(productDetails._id)}
             >
               Add to Cart
-            </button>
-          </div>
-          <Separator />
-          <div className="max-h-[300px] overflow-auto">
-            <h2 className="text-xl font-bold mb-4">Reviews</h2>
-            <div className="grid gap-6">
-              <div className="flex gap-4">
-                <Avatar>
-                  <AvatarFallback>MO</AvatarFallback>
-                </Avatar>
-                <div className="grid gap-1">
-                  <div className="flex items-center gap-2">
-                    <h3>Mohammed Ibrah</h3>
-                  </div>
-                  <div className="flex items-center gap-0.5 ">
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Great product! Really satisfied with the quality and
-                    performance. Highly recommend to others.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <Avatar>
-                  <AvatarFallback>MO</AvatarFallback>
-                </Avatar>
-                <div className="grid gap-1">
-                  <div className="flex items-center gap-2">
-                    <h3>Mohammed Ibrah</h3>
-                  </div>
-                  <div className="flex items-center gap-0.5 ">
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Great product! Really satisfied with the quality and
-                    performance. Highly recommend to others.
-                  </p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <Avatar>
-                  <AvatarFallback>MO</AvatarFallback>
-                </Avatar>
-                <div className="grid gap-1">
-                  <div className="flex items-center gap-2">
-                    <h3>Mohammed Ibrah</h3>
-                  </div>
-                  <div className="flex items-center gap-0.5 ">
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                    <StarIcon className="fill-primary w-5 h-5" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Great product! Really satisfied with the quality and
-                    performance. Highly recommend to others.
-                  </p>
-                </div>
-              </div>
+            </Button> */}
+
+            <Button onClick={() => handleAddtoCart(productDetails)}>
+              Add to Cart
+            </Button>
+
+            <div className="flex items-center gap-1 mt-4">
+              {[...Array(5)].map((_, i) => (
+                <StarIcon key={i} className="w-5 h-5 fill-primary" />
+              ))}
+              <span className="ml-2 text-muted-foreground">
+                {productDetails.rating || 4.5}
+              </span>
             </div>
-            <div className="mt-4 flex gap-2">
-              <Input placeholder="Write a review...."></Input>
-               <Button>Submit</Button>
+          </div>
+
+          <Separator className="my-6" />
+
+          {/* Reviews */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Reviews</h3>
+
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex gap-4 mb-4">
+                <Avatar>
+                  <AvatarFallback>MO</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, j) => (
+                      <StarIcon key={j} className="w-4 h-4 fill-primary" />
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Great product! Really satisfied.
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex gap-2 mt-4">
+              <Input placeholder="Write a review..." />
+              <Button>Submit</Button>
             </div>
           </div>
         </div>

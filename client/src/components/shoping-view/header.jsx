@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { House, LogOut, Menu, ShoppingCart, UserCog } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetTrigger } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { shopingViewHeaderMenuItems } from "@/config";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+
 import {
   Dialog,
   DialogContent,
@@ -21,8 +23,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+
 import { Avatar, AvatarFallback } from "../ui/avatar";
+
 import { logoutUser } from "@/store/auth-slice";
+import { fetchCartItems } from "@/store/shop/cart-slice";
+import UserCartWrapper from "./cart-wrapper";
 
 /* ---------------- MENU LINKS ---------------- */
 function MenuItem() {
@@ -43,9 +49,13 @@ function MenuItem() {
 
 /* ---------------- RIGHT HEADER CONTENT ---------------- */
 function HeaderRightContent() {
-  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const { user } = useSelector((state) => state.auth);
+  const { cartItems = [] } = useSelector((state) => state.shopCart);
+
+  const [openCartSheet, setOpenCartSheet] = useState(false);
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
 
   const handleLogout = () => {
@@ -54,18 +64,36 @@ function HeaderRightContent() {
     navigate("/shop/home");
   };
 
+  /* ---------------- FETCH CART ---------------- */
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchCartItems(user.id));
+    }
+  }, [dispatch, user?.id]);
+
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <Button variant="outline" size="icon">
-          <ShoppingCart className="w-6 h-6" />
-        </Button>
+        {/* CART */}
+        <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+          <Button
+            onClick={() => setOpenCartSheet(true)}
+            variant="outline"
+            size="icon"
+          >
+            <ShoppingCart className="w-6 h-6" />
+            <span className="sr-only">User cart</span>
+          </Button>
 
+          <UserCartWrapper cartItems={cartItems} />
+        </Sheet>
+
+        {/* USER MENU */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Avatar className="bg-gray-500 cursor-pointer">
               <AvatarFallback className="bg-gray-500 text-white font-semibold">
-                {user?.userName?.[0].toUpperCase()}
+                {user?.userName?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
@@ -74,7 +102,7 @@ function HeaderRightContent() {
             <DropdownMenuLabel className="flex justify-center">
               <Avatar className="bg-gray-500">
                 <AvatarFallback className="bg-gray-500 text-white font-semibold">
-                  {user?.userName?.[0].toUpperCase()}
+                  {user?.userName?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuLabel>
@@ -82,7 +110,6 @@ function HeaderRightContent() {
             <div className="flex flex-col items-center px-4 pb-2">
               <span className="font-bold">{user?.userName}</span>
               <p className="text-muted-foreground text-sm">{user?.email}</p>
-              
             </div>
 
             <DropdownMenuSeparator />
@@ -102,7 +129,7 @@ function HeaderRightContent() {
         </DropdownMenu>
       </div>
 
-      {/* Logout Dialog */}
+      {/* LOGOUT DIALOG */}
       <Dialog open={openLogoutDialog} onOpenChange={setOpenLogoutDialog}>
         <DialogContent>
           <DialogHeader>
@@ -113,7 +140,10 @@ function HeaderRightContent() {
           </DialogHeader>
 
           <DialogFooter className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setOpenLogoutDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setOpenLogoutDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleLogout}>
@@ -131,14 +161,13 @@ function ShoppingHeader() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
-
-        {/* Logo */}
+        {/* LOGO */}
         <Link className="flex items-center gap-2" to="/shop/home">
           <House className="h-6 w-6" />
           <span className="font-bold">adeeB</span>
         </Link>
 
-        {/* ✅ Mobile Only Menu Button */}
+        {/* MOBILE MENU */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -147,19 +176,18 @@ function ShoppingHeader() {
               </Button>
             </SheetTrigger>
 
-            <SheetContent side="left" className="w-full max-w-xs pl-6 pt-6">
+            <div className="p-6">
               <MenuItem />
               <HeaderRightContent />
-            </SheetContent>
+            </div>
           </Sheet>
         </div>
 
-        {/* ✅ Tablet & Desktop Menu */}
+        {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-6">
           <MenuItem />
           <HeaderRightContent />
         </div>
-
       </div>
     </header>
   );
