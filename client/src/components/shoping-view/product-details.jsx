@@ -11,17 +11,33 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { StarIcon } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { useDispatch } from "react-redux";
+import { setProductDetails } from "@/store/shop/products-slice";
 
 function ProductDetailsDialog({
   open,
   setOpen,
   productDetails,
-  handleAddtoCart, // <-- must come from parent
+  handleAddtoCart,
 }) {
+  const dispatch = useDispatch();
+
+  // Prevent render when no product is selected
   if (!productDetails) return null;
 
+  /* ------------------ DIALOG CLOSE HANDLER ------------------ */
+  function handleDialogClose() {
+    setOpen(false);
+    dispatch(setProductDetails()); // clear Redux product details
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleDialogClose();
+      }}
+    >
       <DialogContent
         className="
           w-[95vw] max-w-[1100px]
@@ -58,7 +74,9 @@ function ProductDetailsDialog({
             </p>
 
             <div className="flex items-center gap-4 mb-4">
-              <span className="text-2xl font-bold">₵{productDetails.price}</span>
+              <span className="text-2xl font-bold">
+                ₵{productDetails.price}
+              </span>
 
               {productDetails.salePrice > 0 && (
                 <span className="text-2xl font-bold text-green-600">
@@ -67,13 +85,21 @@ function ProductDetailsDialog({
               )}
             </div>
 
-            <Button onClick={() => handleAddtoCart(productDetails)}>
+            {/* ADD TO CART */}
+            <Button
+              className="w-fit"
+              onClick={() => handleAddtoCart(productDetails)}
+            >
               Add to Cart
             </Button>
 
+            {/* RATING */}
             <div className="flex items-center gap-1 mt-4">
               {[...Array(5)].map((_, i) => (
-                <StarIcon key={i} className="w-5 h-5 fill-primary" />
+                <StarIcon
+                  key={i}
+                  className="w-5 h-5 fill-primary text-primary"
+                />
               ))}
               <span className="ml-2 text-muted-foreground">
                 {productDetails.rating || 4.5}
@@ -92,12 +118,17 @@ function ProductDetailsDialog({
                 <Avatar>
                   <AvatarFallback>MO</AvatarFallback>
                 </Avatar>
+
                 <div>
                   <div className="flex gap-1">
                     {[...Array(5)].map((_, j) => (
-                      <StarIcon key={j} className="w-4 h-4 fill-primary" />
+                      <StarIcon
+                        key={j}
+                        className="w-4 h-4 fill-primary text-primary"
+                      />
                     ))}
                   </div>
+
                   <p className="text-sm text-muted-foreground">
                     Great product! Really satisfied.
                   </p>
@@ -105,6 +136,7 @@ function ProductDetailsDialog({
               </div>
             ))}
 
+            {/* REVIEW INPUT */}
             <div className="flex gap-2 mt-4">
               <Input placeholder="Write a review..." />
               <Button>Submit</Button>
