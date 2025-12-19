@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { House, LogOut, Menu, ShoppingCart, UserCog } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { House, LogOut, Menu, ShoppingCart, UserCog, Sun, Moon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sheet, SheetTrigger } from "../ui/sheet";
+import { Sheet, SheetTrigger, SheetContent } from "../ui/sheet";
 import { Button } from "../ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { shopingViewHeaderMenuItems } from "@/config";
@@ -25,13 +25,12 @@ import {
 } from "../ui/dialog";
 
 import { Avatar, AvatarFallback } from "../ui/avatar";
-
 import { logoutUser } from "@/store/auth-slice";
 import { fetchCartItems } from "@/store/shop/cart-slice";
 import UserCartWrapper from "./cart-wrapper";
 
 /* ---------------- MENU LINKS ---------------- */
-function MenuItem() {
+function MenuItem({ onNavigate }) {
   return (
     <nav className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 py-3 md:py-0">
       {shopingViewHeaderMenuItems.map((menuItem) => (
@@ -39,6 +38,7 @@ function MenuItem() {
           key={menuItem.id}
           to={menuItem.path}
           className="text-sm font-medium hover:text-primary"
+          onClick={() => onNavigate?.()}
         >
           {menuItem.label}
         </Link>
@@ -48,7 +48,7 @@ function MenuItem() {
 }
 
 /* ---------------- RIGHT HEADER CONTENT ---------------- */
-function HeaderRightContent() {
+function HeaderRightContent({ onNavigate }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -57,35 +57,61 @@ function HeaderRightContent() {
 
   const [openCartSheet, setOpenCartSheet] = useState(false);
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
+  const [darkMode, setDarkMode] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    setOpenLogoutDialog(false);
-    navigate("/shop/home");
-  };
+  // Total items in cart
+  const cartCount = useMemo(
+    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
+    [cartItems]
+  );
 
-  /* ---------------- FETCH CART ---------------- */
+  // Fetch cart items on user login
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchCartItems(user.id));
     }
   }, [dispatch, user?.id]);
 
+  // Toggle light/dark mode
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle("dark");
+    setDarkMode((prev) => !prev);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    setOpenLogoutDialog(false);
+    navigate("/shop/home");
+    onNavigate?.();
+  };
+
   return (
     <>
       <div className="flex flex-col md:flex-row md:items-center gap-4">
+        {/* THEME TOGGLE */}
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+          {darkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+        </Button>
+
         {/* CART */}
         <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
-          <Button
-            onClick={() => setOpenCartSheet(true)}
-            variant="outline"
-            size="icon"
-          >
-            <ShoppingCart className="w-6 h-6" />
-            <span className="sr-only">User cart</span>
-          </Button>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon" className="relative">
+              <ShoppingCart className="w-6 h-6" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-1 rounded-full">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
 
-          <UserCartWrapper cartItems={cartItems} />
+          <SheetContent side="right">
+            <UserCartWrapper cartItems={cartItems} />
+          </SheetContent>
         </Sheet>
 
         {/* USER MENU */}
@@ -98,7 +124,7 @@ function HeaderRightContent() {
             </Avatar>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent>
+          <DropdownMenuContent align="end">
             <DropdownMenuLabel className="flex justify-center">
               <Avatar className="bg-gray-500">
                 <AvatarFallback className="bg-gray-500 text-white font-semibold">
@@ -114,7 +140,12 @@ function HeaderRightContent() {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onClick={() => navigate("/shop/account")}>
+            <DropdownMenuItem
+              onClick={() => {
+                navigate("/shop/account");
+                onNavigate?.();
+              }}
+            >
               <UserCog className="mr-2 h-4 w-4" />
               Account
             </DropdownMenuItem>
@@ -129,7 +160,7 @@ function HeaderRightContent() {
         </DropdownMenu>
       </div>
 
-      {/* LOGOUT DIALOG */}
+      {/* LOGOUT CONFIRMATION */}
       <Dialog open={openLogoutDialog} onOpenChange={setOpenLogoutDialog}>
         <DialogContent>
           <DialogHeader>
@@ -140,10 +171,7 @@ function HeaderRightContent() {
           </DialogHeader>
 
           <DialogFooter className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setOpenLogoutDialog(false)}
-            >
+            <Button variant="outline" onClick={() => setOpenLogoutDialog(false)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleLogout}>
@@ -158,6 +186,8 @@ function HeaderRightContent() {
 
 /* ---------------- MAIN HEADER ---------------- */
 function ShoppingHeader() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
@@ -169,17 +199,17 @@ function ShoppingHeader() {
 
         {/* MOBILE MENU */}
         <div className="md:hidden">
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
 
-            <div className="p-6">
-              <MenuItem />
-              <HeaderRightContent />
-            </div>
+            <SheetContent side="right">
+              <MenuItem onNavigate={() => setMobileOpen(false)} />
+              <HeaderRightContent onNavigate={() => setMobileOpen(false)} />
+            </SheetContent>
           </Sheet>
         </div>
 

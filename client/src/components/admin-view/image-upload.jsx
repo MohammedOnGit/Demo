@@ -48,7 +48,7 @@ function ProductImageUpload({
   function validateAndSetFile(file) {
     if (!file) return;
 
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif","image/webp"];
     if (!validTypes.includes(file.type)) {
       toast.error("Only image files (jpg, jpeg, png, gif) are allowed!");
       handleRemoveImage();

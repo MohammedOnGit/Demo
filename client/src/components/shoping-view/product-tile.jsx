@@ -42,9 +42,11 @@ function ShoppingProductTile({
 
       {/* Content */}
       <CardContent className="p-4">
-        <h2 className="text-lg font-bold mb-2 line-clamp-2">
+       
+          <h2 className="text-lg justity-start font-bold mb-2 line-clamp-2">
           {product?.title}
         </h2>
+       
 
         <div className="flex justify-between items-center mb-2 text-sm text-muted-foreground">
           <span>{brandOptionsMap[product?.category]}</span>

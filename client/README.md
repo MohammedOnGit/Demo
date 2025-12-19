@@ -32,3 +32,13 @@ const addProduct = async (req, res) => {
 
 
 -----modify the whole file in client/config/index.jsx
+
+----for categories section in the home under the banner---
+ /client/pages/shoping-view/home.jsx
+ const categoriesWithIcons = [
+    { id: "men", label: "Men", icon: ShirtIcon },
+    { id: "women", label: "Women", icon: Venus },
+    { id: "kids", label: "Kids", icon: BabyIcon },
+    { id: "accessories", label: "Accessories", icon: WatchIcon },
+    { id: "footwear", label: "Footwear", icon: UmbrellaIcon },
+  ];
