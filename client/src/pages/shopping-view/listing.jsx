@@ -6,15 +6,8 @@ import ProductFilter from "../../components/shoping-view/filter";
 import ShoppingProductTile from "../../components/shoping-view/product-tile";
 import ProductDetailsDialog from "@/components/shoping-view/product-details";
 
-import {
-  fetchAllFilteredProducts,
-  fetchProductDetails,
-} from "@/store/shop/products-slice";
-
-import {
-  addToCart,
-  fetchCartItems,
-} from "@/store/shop/cart-slice";
+import { fetchAllFilteredProducts, fetchProductDetails } from "@/store/shop/products-slice";
+import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 
 import {
   DropdownMenu,
@@ -27,19 +20,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown } from "lucide-react";
 import { sortOptions } from "@/config";
-import { toast } from "sonner"
+import { toast } from "sonner";
 
 /* Helper */
 function createSearchParamsHelper(filters) {
   const queryParams = [];
-
   for (const [key, value] of Object.entries(filters)) {
     if (Array.isArray(value) && value.length > 0) {
       queryParams.push(`${key}=${value.join(",")}`);
     }
   }
-
   return queryParams.join("&");
+}
+
+/* Helper to parse URL search params into filters object */
+function parseSearchParamsToFilters(searchParams) {
+  const filters = {};
+  for (const [key, value] of searchParams.entries()) {
+    filters[key] = value.split(",");
+  }
+  return filters;
 }
 
 function ShoppingListing() {
@@ -47,12 +47,8 @@ function ShoppingListing() {
 
   /* ------------------ REDUX STATE ------------------ */
   const { user } = useSelector((state) => state.auth);
+  const { products = [], productDetails = null } = useSelector((state) => state.shopProducts);
 
-  const { products = [], productDetails = null } = useSelector(
-    (state) => state.shopProducts
-  );
-
-  
   /* ------------------ LOCAL STATE ------------------ */
   const [filters, setFilters] = useState({});
   const [sort, setSort] = useState("price-lowtohigh");
@@ -65,32 +61,9 @@ function ShoppingListing() {
   };
 
   /* ------------------ ADD TO CART ------------------ */
-  // const handleAddtoCart = (productId, productTitle) => {
-  //   if (!user?.id) return;
-  
-  //   dispatch(
-  //     addToCart({
-  //       userId: user.id,
-  //       productId,
-  //       quantity: 1,
-  //     })
-  //   ).then((res) => {
-  //     if (res?.meta?.requestStatus === "fulfilled") {
-  //       dispatch(fetchCartItems(user.id));
-  
-  //       toast.success("Added to Cart", {
-  //         description: `${productTitle} was added successfully`,
-  //       });
-  //     } else {
-  //       toast.error("Failed to add to cart");
-  //     }
-  //   });
-  // };
-  
-
   const handleAddtoCart = (product) => {
     if (!user?.id || !product?._id) return;
-  
+
     dispatch(
       addToCart({
         userId: user.id,
@@ -100,7 +73,7 @@ function ShoppingListing() {
     ).then((res) => {
       if (res?.meta?.requestStatus === "fulfilled") {
         dispatch(fetchCartItems(user.id));
-  
+
         toast.success("", {
           description: `${product.title} added successfully`,
         });
@@ -109,7 +82,6 @@ function ShoppingListing() {
       }
     });
   };
-  
 
   /* ------------------ FILTER ------------------ */
   const handleFilter = (section, optionId) => {
@@ -118,9 +90,7 @@ function ShoppingListing() {
     if (!newFilters[section]) {
       newFilters[section] = [optionId];
     } else if (newFilters[section].includes(optionId)) {
-      newFilters[section] = newFilters[section].filter(
-        (id) => id !== optionId
-      );
+      newFilters[section] = newFilters[section].filter((id) => id !== optionId);
     } else {
       newFilters[section].push(optionId);
     }
@@ -133,13 +103,21 @@ function ShoppingListing() {
     sessionStorage.setItem("shop-filters", JSON.stringify(newFilters));
   };
 
-  /* ------------------ LOAD SAVED STATE ------------------ */
+  /* ------------------ LOAD SAVED STATE / URL PARAMS ------------------ */
   useEffect(() => {
-    setFilters(JSON.parse(sessionStorage.getItem("shop-filters")) || {});
+    // Load filters from URL first
+    const urlFilters = parseSearchParamsToFilters(searchParams);
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(urlFilters);
+    } else {
+      // Otherwise, fallback to sessionStorage
+      setFilters(JSON.parse(sessionStorage.getItem("shop-filters")) || {});
+    }
+
     setSort(sessionStorage.getItem("shop-sort") || "price-lowtohigh");
   }, []);
 
-  /* ------------------ URL PARAMS ------------------ */
+  /* ------------------ SYNC FILTERS TO URL ------------------ */
   useEffect(() => {
     const queryString = createSearchParamsHelper(filters);
     setSearchParams(new URLSearchParams(queryString));
@@ -157,13 +135,10 @@ function ShoppingListing() {
 
   /* ------------------ OPEN DETAILS DIALOG ------------------ */
   useEffect(() => {
-    if (productDetails) {
-      setOpenDetailsDialog(true);
-    }
+    if (productDetails) setOpenDetailsDialog(true);
   }, [productDetails]);
 
-  /* ------------------ DEBUG ------------------ */
-
+  /* ------------------ RENDER ------------------ */
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 p-4">
       <ProductFilter filters={filters} handleFilter={handleFilter} />
@@ -190,10 +165,7 @@ function ShoppingListing() {
                 }}
               >
                 {sortOptions.map((sortItem) => (
-                  <DropdownMenuRadioItem
-                    key={sortItem.id}
-                    value={sortItem.id}
-                  >
+                  <DropdownMenuRadioItem key={sortItem.id} value={sortItem.id}>
                     {sortItem.label}
                   </DropdownMenuRadioItem>
                 ))}
