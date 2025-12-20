@@ -42,3 +42,7 @@ const addProduct = async (req, res) => {
     { id: "accessories", label: "Accessories", icon: WatchIcon },
     { id: "footwear", label: "Footwear", icon: UmbrellaIcon },
   ];
+
+
+  // Modify
+  address model in server/models/address.js
