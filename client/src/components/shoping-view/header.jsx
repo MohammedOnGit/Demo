@@ -1,5 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { House, LogOut, Menu, ShoppingCart, UserCog, Sun, Moon } from "lucide-react";
+import {
+  House,
+  LogOut,
+  Menu,
+  ShoppingCart,
+  UserCog,
+  Sun,
+  Moon,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Sheet, SheetTrigger, SheetContent } from "../ui/sheet";
 import { Button } from "../ui/button";
@@ -28,20 +36,20 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { logoutUser } from "@/store/auth-slice";
 import { fetchCartItems } from "@/store/shop/cart-slice";
 import UserCartWrapper from "./cart-wrapper";
+import { Label } from "../ui/label";
 
-/* ---------------- MENU LINKS ---------------- */
+/* ---------------- MENU ITEMS ---------------- */
 function MenuItem({ onNavigate }) {
   return (
     <nav className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6 py-3 md:py-0">
       {shopingViewHeaderMenuItems.map((menuItem) => (
-        <Link
+        <Label
           key={menuItem.id}
-          to={menuItem.path}
-          className="text-sm font-medium hover:text-primary"
-          onClick={() => onNavigate?.()}
+          className="text-sm font-medium hover:text-primary cursor-pointer"
+          onClick={() => onNavigate(menuItem)}
         >
           {menuItem.label}
-        </Link>
+        </Label>
       ))}
     </nav>
   );
@@ -61,26 +69,22 @@ function HeaderRightContent({ onNavigate }) {
     document.documentElement.classList.contains("dark")
   );
 
-  // Total items in cart
   const cartCount = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems]
   );
 
-  // Fetch cart items on user login
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchCartItems(user.id));
     }
   }, [dispatch, user?.id]);
 
-  // Toggle light/dark mode
   const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
     setDarkMode((prev) => !prev);
   };
 
-  // Handle logout
   const handleLogout = () => {
     dispatch(logoutUser());
     setOpenLogoutDialog(false);
@@ -187,6 +191,27 @@ function HeaderRightContent({ onNavigate }) {
 /* ---------------- MAIN HEADER ---------------- */
 function ShoppingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleNavigate = (menuItem) => {
+    // Remove old filters
+    sessionStorage.removeItem("shop-filters");
+
+    // Only apply category if not home
+    const currentFilter =
+      menuItem.id !== "home" ? { category: [menuItem.id] } : null;
+
+    if (currentFilter) {
+      sessionStorage.setItem("shop-filters", JSON.stringify(currentFilter));
+      const params = new URLSearchParams();
+      params.set("category", menuItem.id);
+      navigate(`/shop/listing?${params.toString()}`);
+    } else {
+      navigate("/shop/home");
+    }
+
+    setMobileOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
@@ -207,7 +232,7 @@ function ShoppingHeader() {
             </SheetTrigger>
 
             <SheetContent side="right">
-              <MenuItem onNavigate={() => setMobileOpen(false)} />
+              <MenuItem onNavigate={handleNavigate} />
               <HeaderRightContent onNavigate={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
@@ -215,7 +240,7 @@ function ShoppingHeader() {
 
         {/* DESKTOP MENU */}
         <div className="hidden md:flex items-center gap-6">
-          <MenuItem />
+          <MenuItem onNavigate={handleNavigate} />
           <HeaderRightContent />
         </div>
       </div>

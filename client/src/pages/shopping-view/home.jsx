@@ -1,9 +1,136 @@
+// import React, { useEffect, useRef, useState, useCallback } from "react";
+// import { Button } from "@/components/ui/button";
+// import { Card, CardContent } from "@/components/ui/card";
+// import { useSwipeable } from "react-swipeable";
+// import { useDispatch, useSelector } from "react-redux";
+// import { useNavigate } from "react-router-dom";
+// import {
+//   BabyIcon,
+//   ShirtIcon,
+//   Venus,
+//   WatchIcon,
+//   UmbrellaIcon,
+//   ChessKnight,
+//   LoaderPinwheel,
+//   TrophyIcon,
+//   CarIcon,
+//   BaggageClaimIcon,
+// } from "lucide-react";
+
+// import bannerOne from "../../assets/ban/b-1.webp";
+// import bannerTwo from "../../assets/ban/b-2.webp";
+// import bannerThree from "../../assets/ban/b-3.webp";
+
+// import { fetchAllFilteredProducts } from "@/store/shop/products-slice";
+// import ShoppingProductTile from "@/components/shoping-view/product-tile";
+
+// const AUTOPLAY_DELAY = 5000;
+// const MAX_FEATURED_PRODUCTS = 4;
+
+// const slides = [bannerOne, bannerTwo, bannerThree];
+
+// export default function ShoppingHome() {
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+//   const { products = [], isLoading, error } = useSelector(
+//     (state) => state.shopProducts || {}
+//   );
+
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [paused, setPaused] = useState(false);
+//   const autoplayRef = useRef(null);
+
+//   const next = useCallback(
+//     () => setCurrentIndex((i) => (i + 1) % slides.length),
+//     []
+//   );
+
+//   const prev = useCallback(
+//     () => setCurrentIndex((i) => (i - 1 + slides.length) % slides.length),
+//     []
+//   );
+
+//   useEffect(() => {
+//     autoplayRef.current = setInterval(() => {
+//       if (!paused) next();
+//     }, AUTOPLAY_DELAY);
+
+//     return () => clearInterval(autoplayRef.current);
+//   }, [paused, next]);
+
+//   useEffect(() => {
+//     dispatch(fetchAllFilteredProducts({ filterParams: {}, sortParam: null }));
+//   }, [dispatch]);
+
+//   const swipeHandlers = useSwipeable({
+//     onSwipedLeft: next,
+//     onSwipedRight: prev,
+//     trackMouse: true,
+//   });
+
+//   const featuredProducts = Array.isArray(products)
+//     ? products.slice(0, MAX_FEATURED_PRODUCTS)
+//     : [];
+
+//   const navigateToListing = (key, value) => {
+//     const params = new URLSearchParams();
+//     params.set(key, value);
+//     navigate(`/shop/listing?${params.toString()}`);
+//   };
+
+//   return (
+//     <div className="flex flex-col min-h-screen bg-gray-100">
+//       {/* BANNER */}
+//       <div
+//         {...swipeHandlers}
+//         onMouseEnter={() => setPaused(true)}
+//         onMouseLeave={() => setPaused(false)}
+//         className="relative h-[500px] overflow-hidden"
+//       >
+//         <div
+//           className="flex h-full transition-transform duration-700"
+//           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+//         >
+//           {slides.map((src, i) => (
+//             <img
+//               key={i}
+//               src={src}
+//               alt={`Banner ${i + 1}`}
+//               className="w-full h-full object-cover flex-shrink-0"
+//             />
+//           ))}
+//         </div>
+
+//         <Button onClick={prev} className="absolute left-4 top-1/2">{"<"}</Button>
+//         <Button onClick={next} className="absolute right-4 top-1/2">{">"}</Button>
+//       </div>
+
+//       {/* FEATURED */}
+//       <section className="py-12">
+//         <div className="container mx-auto px-4">
+//           <h2 className="text-3xl font-bold mb-6">Featured Products</h2>
+
+//           {isLoading ? (
+//             <p>Loading...</p>
+//           ) : error ? (
+//             <p className="text-red-500">Failed to load products</p>
+//           ) : featuredProducts.length ? (
+//             <div className="grid md:grid-cols-4 gap-6">
+//               {featuredProducts.map((p) => (
+//                 <ShoppingProductTile key={p._id} product={p} />
+//               ))}
+//             </div>
+//           ) : (
+//             <p>No products available</p>
+//           )}
+//         </div>
+//       </section>
+//     </div>
+//   );
+// }
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import bannerOne from "../../assets/ban/b-1.webp";
-import bannerTwo from "../../assets/ban/b-2.webp";
-import bannerThree from "../../assets/ban/b-3.webp";
 import { useSwipeable } from "react-swipeable";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -14,149 +141,117 @@ import {
   WatchIcon,
   UmbrellaIcon,
   ChessKnight,
-  LoaderPinwheel,
   TrophyIcon,
   CarIcon,
   BaggageClaimIcon,
 } from "lucide-react";
+
+import bannerOne from "../../assets/ban/b-1.webp";
+import bannerTwo from "../../assets/ban/b-2.webp";
+import bannerThree from "../../assets/ban/b-3.webp";
+
 import { fetchAllFilteredProducts } from "@/store/shop/products-slice";
 import ShoppingProductTile from "@/components/shoping-view/product-tile";
 
-/* ---------------- CONFIG ---------------- */
 const AUTOPLAY_DELAY = 5000;
-const TRANSITION_DURATION = 700;
-const MAX_FEATURED_PRODUCTS = 8;
+const MAX_FEATURED_PRODUCTS = 4;
 
 const slides = [bannerOne, bannerTwo, bannerThree];
 
+/* ================= CATEGORY & BRAND DATA ================= */
 const categoriesWithIcons = [
   { id: "men", label: "Men", icon: ShirtIcon },
   { id: "women", label: "Women", icon: Venus },
   { id: "kids", label: "Kids", icon: BabyIcon },
+  { id: "footwear", label: "Footwear", icon: TrophyIcon },
   { id: "accessories", label: "Accessories", icon: WatchIcon },
-  { id: "footwear", label: "Footwear", icon: UmbrellaIcon },
 ];
 
 const brandWithIcons = [
-  { id: "nike", label: "Nike", icon: ChessKnight },
-  { id: "adidas", label: "Adidas", icon: LoaderPinwheel },
-  { id: "puma", label: "Puma", icon: TrophyIcon },
-  { id: "levi", label: "Levi's", icon: CarIcon },
-  { id: "zara", label: "Zara", icon: BaggageClaimIcon },
-  { id: "hm", label: "H&M", icon: ShirtIcon },
+  { id: "nike", label: "Nike", icon: ShirtIcon },
+  { id: "adidas", label: "Adidas", icon: ShirtIcon },
+  { id: "puma", label: "Puma", icon: ShirtIcon },
+  { id: "reebok", label: "Reebok", icon: ShirtIcon },
+  { id: "gucci", label: "Gucci", icon: UmbrellaIcon },
+  { id: "prada", label: "Prada", icon: UmbrellaIcon },
 ];
 
 export default function ShoppingHome() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { products = [], isLoading, error } = useSelector(
-    (state) => state.shopProducts
+    (state) => state.shopProducts || {}
   );
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const autoplayRef = useRef(null);
 
-  /* ---------------- AUTOPLAY ---------------- */
-  const goToPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  }, []);
-
-  const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
-  }, []);
+  /* ------------------- SLIDER ------------------- */
+  const next = useCallback(
+    () => setCurrentIndex((i) => (i + 1) % slides.length),
+    []
+  );
+  const prev = useCallback(
+    () => setCurrentIndex((i) => (i - 1 + slides.length) % slides.length),
+    []
+  );
 
   useEffect(() => {
     autoplayRef.current = setInterval(() => {
-      if (!isPaused) goToNext();
+      if (!paused) next();
     }, AUTOPLAY_DELAY);
 
     return () => clearInterval(autoplayRef.current);
-  }, [isPaused, goToNext]);
+  }, [paused, next]);
 
+  /* ------------------- FETCH PRODUCTS ------------------- */
   useEffect(() => {
-    const handleVisibilityChange = () => setIsPaused(document.hidden);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
-
-  /* ---------------- FETCH PRODUCTS ---------------- */
-  useEffect(() => {
-    dispatch(
-      fetchAllFilteredProducts({
-        filterParams: {},
-        sortParam: "price-lowtohigh",
-      })
-    );
+    dispatch(fetchAllFilteredProducts({ filterParams: {}, sortParam: null }));
   }, [dispatch]);
 
-  /* ---------------- SWIPE ---------------- */
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: goToNext,
-    onSwipedRight: goToPrev,
+    onSwipedLeft: next,
+    onSwipedRight: prev,
     trackMouse: true,
   });
 
-  /* ---------------- NAVIGATION ---------------- */
-  const handleNavigateToListingPage = (item, section) => {
-    // Build query string
-    const query = new URLSearchParams();
-    query.set(section, item.id); // category=men or brand=nike
+  const featuredProducts = Array.isArray(products)
+    ? products.slice(0, MAX_FEATURED_PRODUCTS)
+    : [];
 
-    navigate(`/shop/listing?${query.toString()}`);
+  /* ------------------- NAVIGATE TO LISTING ------------------- */
+  const handleNavigateToListingPage = (item, type) => {
+    const params = new URLSearchParams();
+    params.set(type, item.id);
+    navigate(`/shop/listing?${params.toString()}`);
   };
-
-  const handleViewAllProducts = () => navigate("/shop/listing");
-
-  /* ---------------- FEATURED PRODUCTS ---------------- */
-  const featuredProducts = products.filter(Boolean).slice(0, MAX_FEATURED_PRODUCTS);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* ================= BANNER ================= */}
+      {/* ------------------- BANNER ------------------- */}
       <div
         {...swipeHandlers}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        className="relative w-full overflow-hidden h-[500px] lg:h-[550px]"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        className="relative h-[500px] overflow-hidden"
       >
         <div
-          className="flex h-full"
-          style={{
-            transform: `translateX(-${currentIndex * 100}%)`,
-            transition: `transform ${TRANSITION_DURATION}ms ease-in-out`,
-          }}
+          className="flex h-full transition-transform duration-700"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
-          {slides.map((slide, index) => (
+          {slides.map((src, i) => (
             <img
-              key={index}
-              src={slide}
-              alt={`Banner ${index + 1}`}
-              className="flex-shrink-0 w-full h-full object-cover"
-              loading="lazy"
+              key={i}
+              src={src}
+              alt={`Banner ${i + 1}`}
+              className="w-full h-full object-cover flex-shrink-0"
             />
           ))}
         </div>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={goToPrev}
-          className="absolute top-1/2 left-4 -translate-y-1/2 bg-white/80"
-        >
-          &lt;
-        </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={goToNext}
-          className="absolute top-1/2 right-4 -translate-y-1/2 bg-white/80"
-        >
-          &gt;
-        </Button>
+        <Button onClick={prev} className="absolute left-4 top-1/2">{"<"}</Button>
+        <Button onClick={next} className="absolute right-4 top-1/2">{">"}</Button>
       </div>
 
       {/* ================= SHOP BY CATEGORY ================= */}
@@ -201,28 +296,23 @@ export default function ShoppingHome() {
         </div>
       </section>
 
-      {/* ================= FEATURED PRODUCTS ================= */}
-      <section className="py-12 bg-gray-50">
+      {/* ------------------- FEATURED PRODUCTS ------------------- */}
+      <section className="py-12">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold">Featured Products</h2>
-            <Button variant="link" onClick={handleViewAllProducts}>
-              View All Products
-            </Button>
-          </div>
+          <h2 className="text-3xl font-bold mb-6">Featured Products</h2>
 
           {isLoading ? (
-            <div className="text-center py-12">Loading products...</div>
+            <p>Loading...</p>
           ) : error ? (
-            <div className="text-center py-12 text-red-500">Failed to load products</div>
-          ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <ShoppingProductTile key={product._id} product={product} />
+            <p className="text-red-500">Failed to load products</p>
+          ) : featuredProducts.length ? (
+            <div className="grid md:grid-cols-4 gap-6">
+              {featuredProducts.map((p) => (
+                <ShoppingProductTile key={p._id} product={p} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">No featured products found.</div>
+            <p>No products available</p>
           )}
         </div>
       </section>
