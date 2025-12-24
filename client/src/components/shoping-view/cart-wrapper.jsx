@@ -12,8 +12,12 @@ import {
 } from "@/components/ui/empty";
 import { PackageOpen } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { useNavigate } from "react-router-dom";
 
 function UserCartWrapper({ cartItems = [] }) {
+  // ✅ FIX: invoke the hook
+  const navigate = useNavigate();
+
   const totalCartAmount =
     cartItems && cartItems.length > 0
       ? cartItems.reduce(
@@ -25,6 +29,7 @@ function UserCartWrapper({ cartItems = [] }) {
           0
         )
       : 0;
+
   return (
     <SheetContent side="right" className="w-full max-w-md h-full flex flex-col">
       {/* HEADER */}
@@ -38,7 +43,9 @@ function UserCartWrapper({ cartItems = [] }) {
           cartItems.map((item, index) => (
             <React.Fragment key={item.productId}>
               <UserCartItemsContent cartItem={item} />
-              {index !== cartItems.length - 1 && <Separator className="my-2" />}
+              {index !== cartItems.length - 1 && (
+                <Separator className="my-2" />
+              )}
             </React.Fragment>
           ))
         ) : (
@@ -66,7 +73,11 @@ function UserCartWrapper({ cartItems = [] }) {
           <span className="font-bold">GHC {totalCartAmount.toFixed(2)}</span>
         </div>
 
-        <Button className="w-full" disabled={cartItems.length === 0}>
+        <Button
+          onClick={() => navigate("/shop/checkout")}
+          className="w-full"
+          disabled={cartItems.length === 0}
+        >
           Checkout
         </Button>
       </div>

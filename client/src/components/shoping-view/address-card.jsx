@@ -1,51 +1,39 @@
-// import React from "react";
-// import { Card, CardContent } from "../ui/card";
-// import { Label } from "../ui/label";
-
-// function AddressCard({ addressInfo }) {
-//   if (!addressInfo) return null;
-
-//   const { address, city, phone, pincode, notes } = addressInfo;
-
-//   return (
-//     <Card className="rounded-xl shadow-sm">
-//       <CardContent className="space-y-1 p-4 text-sm">
-//         <Label>{addressInfo?.address}</Label>
-//         <Label>{addressInfo?.city}</Label>
-//         <Label>{addressInfo?.pincode}</Label>
-//         <Label>{addressInfo?.phone}</Label>
-//         <Label>{addressInfo?.notes}</Label>
-
-//       </CardContent>
-//     </Card>
-//   );
-// }
-
-// export default AddressCard;
-
 import React from "react";
-import { Card, CardContent } from "../ui/card";
+import { Card, CardContent, CardFooter } from "../ui/card";
+import { Button } from "../ui/button";
 
-function AddressCard({ addressInfo }) {
-  if (!addressInfo) return null;
-
-  const { address, city, phone, digitalAddress, notes } = addressInfo;
-
+function AddressCard({ addressInfo, setFormData, handleDeleteAddress }) {
   return (
-    <Card className="rounded-xl shadow-sm">
-      <CardContent className="space-y-1 p-4 text-sm">
-        <p className="font-medium">{address}</p>
-        <p className="text-muted-foreground">
-          {city} • {digitalAddress}
-        </p>
-        <p className="text-muted-foreground">{phone}</p>
-        {notes && (
-          <p className="text-xs text-muted-foreground">{notes}</p>
+    <Card className="relative">
+      <CardContent className="space-y-2">
+        <p className="font-medium">{addressInfo.address}</p>
+        <p className="text-sm text-muted-foreground">{addressInfo.city}</p>
+        <p className="text-sm">{addressInfo.phone}</p>
+        <p className="text-sm">{addressInfo.digitalAddress}</p>
+        {addressInfo.notes && (
+          <p className="text-sm italic">{addressInfo.notes}</p>
         )}
       </CardContent>
+
+      <CardFooter className="flex gap-2 justify-between">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFormData({ ...addressInfo })}
+        >
+          Edit
+        </Button>
+
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => handleDeleteAddress(addressInfo._id)}
+        >
+          Delete
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
 
 export default AddressCard;
-

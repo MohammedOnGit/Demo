@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
@@ -38,7 +37,10 @@ app.use(
 );
 
 app.use(cookieParser());
+
+// ✅ REQUIRED: JSON + URL-ENCODED BODY PARSERS
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 /* -------------------- DATABASE -------------------- */
 mongoose

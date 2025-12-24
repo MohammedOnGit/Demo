@@ -5,9 +5,10 @@ const Address = require("../../models/Address");
  */
 const addAddress = async (req, res) => {
   try {
-    const { userId, address, city, pincode, notes, phone } = req.body;
+    const userId = req.user?.id; // ✅ always from auth middleware
+    const { address, city, digitalAddress, phone, notes } = req.body;
 
-    if (!userId || !address || !city || !pincode || !phone) {
+    if (!userId || !address || !city || !digitalAddress || !phone) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields. Please provide all address details.",
@@ -18,16 +19,15 @@ const addAddress = async (req, res) => {
       userId,
       address,
       city,
-      pincode,
-      notes,
+      digitalAddress,
       phone,
+      notes: notes || "",
     });
 
     await newlyCreatedAddress.save();
 
     return res.status(201).json({
       success: true,
-      message: "Address has been added successfully.",
       data: newlyCreatedAddress,
     });
   } catch (error) {
@@ -40,31 +40,23 @@ const addAddress = async (req, res) => {
 };
 
 /**
- * FETCH ALL ADDRESSES FOR A USER
- */ 
+ * FETCH ALL ADDRESSES
+ */
 const fetchAllAddress = async (req, res) => {
   try {
-    const { userId } = req.params;
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required to fetch addresses.",
-      });
-    }
+    const userId = req.user.id;
 
     const addressList = await Address.find({ userId }).sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
-      message: "Addresses retrieved successfully.",
       data: addressList,
     });
   } catch (error) {
     console.error("Error fetching addresses:", error);
     return res.status(500).json({
       success: false,
-      message: "Unable to fetch addresses. Please try again later.",
+      message: "Unable to fetch addresses.",
     });
   }
 };
@@ -74,15 +66,9 @@ const fetchAllAddress = async (req, res) => {
  */
 const editAddress = async (req, res) => {
   try {
-    const { userId, addressId } = req.params;
-    const updatedData = req.body;
-
-    if (!userId || !addressId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID and Address ID are required.",
-      });
-    }
+    const userId = req.user.id;
+    const { addressId } = req.params;
+    const { userId: bodyUserId, ...updatedData } = req.body; // prevent override
 
     const updatedAddress = await Address.findOneAndUpdate(
       { _id: addressId, userId },
@@ -93,20 +79,19 @@ const editAddress = async (req, res) => {
     if (!updatedAddress) {
       return res.status(404).json({
         success: false,
-        message: "Address not found or you do not have permission to edit it.",
+        message: "Address not found.",
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: "Address updated successfully.",
       data: updatedAddress,
     });
   } catch (error) {
     console.error("Error editing address:", error);
     return res.status(500).json({
       success: false,
-      message: "Unable to update address. Please try again later.",
+      message: "Unable to update address.",
     });
   }
 };
@@ -116,14 +101,8 @@ const editAddress = async (req, res) => {
  */
 const deleteAddress = async (req, res) => {
   try {
-    const { userId, addressId } = req.params;
-
-    if (!userId || !addressId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID and Address ID are required.",
-      });
-    }
+    const userId = req.user.id;
+    const { addressId } = req.params;
 
     const deletedAddress = await Address.findOneAndDelete({
       _id: addressId,
@@ -133,7 +112,7 @@ const deleteAddress = async (req, res) => {
     if (!deletedAddress) {
       return res.status(404).json({
         success: false,
-        message: "Address not found or you do not have permission to delete it.",
+        message: "Address not found.",
       });
     }
 
@@ -145,7 +124,7 @@ const deleteAddress = async (req, res) => {
     console.error("Error deleting address:", error);
     return res.status(500).json({
       success: false,
-      message: "Unable to delete address. Please try again later.",
+      message: "Unable to delete address.",
     });
   }
 };

@@ -16,13 +16,10 @@ export const addNewAddress = createAsyncThunk(
         "http://localhost:5000/api/shop/address/add",
         formData,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
-
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -35,18 +32,15 @@ export const addNewAddress = createAsyncThunk(
 /* ================= FETCH ALL ADDRESSES ================= */
 export const fetchAllAddresses = createAsyncThunk(
   "address/fetchAllAddresses",
-  async (userId, thunkAPI) => {
+  async (_, thunkAPI) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/shop/address/get/${userId}`,
+        "http://localhost:5000/api/shop/address/get",
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
-
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -59,19 +53,16 @@ export const fetchAllAddresses = createAsyncThunk(
 /* ================= EDIT ADDRESS ================= */
 export const editAnAddress = createAsyncThunk(
   "address/editAnAddress",
-  async ({ userId, addressId, formData }, thunkAPI) => {
+  async ({ addressId, formData }, thunkAPI) => {
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/shop/address/update/${userId}/${addressId}`,
+        `http://localhost:5000/api/shop/address/update/${addressId}`,
         formData,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
-
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(
@@ -84,19 +75,16 @@ export const editAnAddress = createAsyncThunk(
 /* ================= DELETE ADDRESS ================= */
 export const deleteAddress = createAsyncThunk(
   "address/deleteAddress",
-  async ({ userId, addressId }, thunkAPI) => {
+  async (addressId, thunkAPI) => {
     try {
-      const response = await axios.delete(
-        `http://localhost:5000/api/shop/address/delete/${userId}/${addressId}`,
+      await axios.delete(
+        `http://localhost:5000/api/shop/address/delete/${addressId}`,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
-
-      return addressId; // return ID so we can remove it from state
+      return addressId;
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Failed to delete address"
@@ -116,7 +104,7 @@ const addressSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      /* ---------- ADD ---------- */
+      // ---------- ADD ----------
       .addCase(addNewAddress.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -128,10 +116,9 @@ const addressSlice = createSlice({
       .addCase(addNewAddress.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        state.addressList = [];
       })
 
-      /* ---------- FETCH ---------- */
+      // ---------- FETCH ----------
       .addCase(fetchAllAddresses.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -145,15 +132,22 @@ const addressSlice = createSlice({
         state.error = action.payload;
       })
 
-      /* ---------- EDIT ---------- */
+      // ---------- EDIT ----------
+      .addCase(editAnAddress.pending, (state) => {
+        state.isLoading = true;
+      })
       .addCase(editAnAddress.fulfilled, (state, action) => {
         state.isLoading = false;
         state.addressList = state.addressList.map((addr) =>
           addr._id === action.payload._id ? action.payload : addr
         );
       })
+      .addCase(editAnAddress.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
 
-      /* ---------- DELETE ---------- */
+      // ---------- DELETE ----------
       .addCase(deleteAddress.fulfilled, (state, action) => {
         state.isLoading = false;
         state.addressList = state.addressList.filter(
