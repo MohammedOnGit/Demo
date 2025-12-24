@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+
 import {
   Table,
   TableBody,
@@ -17,13 +13,11 @@ import {
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 
-function ShoppingOrders() {
+function AdminOrdersViews() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          Order History
-        </CardTitle>
+        <CardTitle>All Orders</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -81,8 +75,9 @@ function ShoppingOrders() {
           </Table>
         </div>
       </CardContent>
+      
     </Card>
   );
 }
 
-export default ShoppingOrders;
+export default AdminOrdersViews;

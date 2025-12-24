@@ -1,8 +1,8 @@
 import React from "react";
 import accountImage from "../../assets/ban/accountImage.webp";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Orders from "@/components/shoping-view/orders";
 import Address from "@/components/shoping-view/address";
+import ShoppingOrders from "@/components/shoping-view/orders";
 
 function ShoppingAccount() {
   return (
@@ -27,7 +27,7 @@ function ShoppingAccount() {
             </TabsList>
 
             <TabsContent value="orders">
-              <Orders />
+              <ShoppingOrders/>
             </TabsContent>
 
             <TabsContent value="address">
