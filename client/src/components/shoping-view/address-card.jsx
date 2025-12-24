@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 function AddressCard({ addressInfo, setFormData, handleDeleteAddress }) {
   return (
     <Card className="relative">
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 min-h-max h-38">
         <p className="font-medium">{addressInfo.address}</p>
         <p className="text-sm text-muted-foreground">{addressInfo.city}</p>
         <p className="text-sm">{addressInfo.phone}</p>

@@ -14,8 +14,7 @@ import { PackageOpen } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useNavigate } from "react-router-dom";
 
-function UserCartWrapper({ cartItems = [] }) {
-  // ✅ FIX: invoke the hook
+function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
   const navigate = useNavigate();
 
   const totalCartAmount =
@@ -70,11 +69,16 @@ function UserCartWrapper({ cartItems = [] }) {
       <div className="border-t mt-4 space-y-4 px-4 py-4">
         <div className="flex justify-between">
           <span className="font-bold">Total</span>
-          <span className="font-bold">GHC {totalCartAmount.toFixed(2)}</span>
+          <span className="font-bold">
+            GHC {totalCartAmount.toFixed(2)}
+          </span>
         </div>
 
         <Button
-          onClick={() => navigate("/shop/checkout")}
+          onClick={() => {
+            setOpenCartSheet(false);
+            navigate("/shop/checkout");
+          }}
           className="w-full"
           disabled={cartItems.length === 0}
         >

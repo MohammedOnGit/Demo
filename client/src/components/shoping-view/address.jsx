@@ -104,7 +104,7 @@ function Address() {
 
       <CardContent className="space-y-6 justify-end">
         {/* ADDRESS LIST */}
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
           {addressList.map((addressItem) => (
             <AddressCard
               key={addressItem._id}

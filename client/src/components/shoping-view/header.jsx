@@ -114,7 +114,7 @@ function HeaderRightContent({ onNavigate }) {
           </SheetTrigger>
 
           <SheetContent side="right">
-            <UserCartWrapper cartItems={cartItems} />
+            <UserCartWrapper cartItems={cartItems} setOpenCartSheet={setOpenCartSheet} />
           </SheetContent>
         </Sheet>
 
