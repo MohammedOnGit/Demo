@@ -1,5 +1,10 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 
 import {
   Table,
@@ -10,10 +15,19 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import {
+  Dialog,
+  DialogTrigger,
+} from "../ui/dialog";
+import AdminOrderDetailsView from "./order-details-view";
+
 
 function AdminOrdersViews() {
+  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+
   return (
     <Card>
       <CardHeader>
@@ -21,10 +35,10 @@ function AdminOrdersViews() {
       </CardHeader>
 
       <CardContent>
-        <div className="">
+        <div className="overflow-x-auto">
           <Table>
             <TableCaption>
-              A list of your recent orders.
+              A list of all customer orders.
             </TableCaption>
 
             <TableHeader>
@@ -32,26 +46,20 @@ function AdminOrdersViews() {
                 <TableHead className="text-center">Order ID</TableHead>
                 <TableHead className="text-center">Date</TableHead>
                 <TableHead className="text-center">Status</TableHead>
-
-                {/* RIGHT aligned header */}
-                <TableHead className="text-center">
-                  Total
-                </TableHead>
-
-                {/* RIGHT aligned header */}
-                <TableHead className="text-center">
-                  Actions
-                </TableHead>
+                <TableHead className="text-center">Total</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium text-center">
+                <TableCell className="text-center font-medium">
                   #INV001
                 </TableCell>
 
-                <TableCell className="text-center">12 Dec 2025</TableCell>
+                <TableCell className="text-center">
+                  12 Dec 2025
+                </TableCell>
 
                 <TableCell className="text-center">
                   <Badge variant="secondary">
@@ -59,23 +67,29 @@ function AdminOrdersViews() {
                   </Badge>
                 </TableCell>
 
-                {/* RIGHT aligned cell */}
                 <TableCell className="text-center">
                   GHC 450.00
                 </TableCell>
 
-                {/* RIGHT aligned cell */}
                 <TableCell className="text-center">
-                  <Button size="sm">
-                    View Details
-                  </Button>
+                  <Dialog
+                    open={openDetailsDialog}
+                    onOpenChange={setOpenDetailsDialog}
+                  >
+                    <DialogTrigger asChild>
+                      <Button size="sm">
+                        View Details
+                      </Button>
+                    </DialogTrigger>
+
+                    <AdminOrderDetailsView />
+                  </Dialog>
                 </TableCell>
               </TableRow>
             </TableBody>
           </Table>
         </div>
       </CardContent>
-      
     </Card>
   );
 }
