@@ -478,7 +478,7 @@ import {
   HelpCircle,
   ChevronRight,
   Home,
-  City,
+  Building2,
   Globe,
   Star
 } from "lucide-react";

@@ -25,7 +25,7 @@ import {
   Download,
   Printer,
   Globe,
-  City,
+  Building2,
   Home,
   FileText,
   MessageSquare,
@@ -240,7 +240,7 @@ function AdminOrderDetailsView() {
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-2">{regionInfo.deliveryDays} days delivery</p>
                 </div>
-                <City className="h-5 w-5 text-muted-foreground" />
+                <Building2 className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
             
