@@ -1,18 +1,30 @@
-import React from "react";
+
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Separator } from "../ui/separator";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { StarIcon } from "lucide-react";
-import { Input } from "../ui/input";
+import {
+  Star,
+  ShoppingBag,
+  Heart,
+  Share2,
+  Plus,
+  Minus,
+  X,
+} from "lucide-react";
 import { Button } from "../ui/button";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setProductDetails } from "@/store/shop/products-slice";
+import { addToWishlist, removeFromWishlist } from "@/store/shop/wishlist-slice";
+import { cn } from "@/lib/utils";
+import { Badge } from "../ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Textarea } from "../ui/textarea";
+import { toast } from "sonner";
 
 function ProductDetailsDialog({
   open,
@@ -21,126 +33,204 @@ function ProductDetailsDialog({
   handleAddtoCart,
 }) {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { items: wishlistItems, isLoading: wishlistLoading } = useSelector(
+    (state) => state.wishlist || { items: [], isLoading: false }
+  );
 
-  // Prevent render when no product is selected
+  const [quantity, setQuantity] = useState(1);
+  const [selectedTab, setSelectedTab] = useState("details");
+  const [reviewText, setReviewText] = useState("");
+
   if (!productDetails) return null;
 
-  /* ------------------ DIALOG CLOSE HANDLER ------------------ */
+  const isInWishlist = wishlistItems?.some(
+    (item) =>
+      item.product?._id === productDetails._id ||
+      item.product?.productId === productDetails._id ||
+      item.productId === productDetails._id
+  );
+
   function handleDialogClose() {
     setOpen(false);
-    dispatch(setProductDetails()); // clear Redux product details
+    setQuantity(1);
+    dispatch(setProductDetails());
   }
 
+  const isOnSale = productDetails?.salePrice > 0;
+
+  const incrementQuantity = () => setQuantity((prev) => prev + 1);
+  const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
+
+  const handleWishlistToggle = () => {
+    if (!user?.id) {
+      toast.info("Please login to save items");
+      return;
+    }
+
+    const action = isInWishlist
+      ? removeFromWishlist(productDetails._id)
+      : addToWishlist(productDetails._id);
+
+    dispatch(action)
+      .unwrap()
+      .then(() =>
+        toast.success(isInWishlist ? "Removed from wishlist" : "Added to wishlist")
+      )
+      .catch(() => toast.error("Action failed"));
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied");
+  };
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) handleDialogClose();
-      }}
-    >
-      <DialogContent
-        className="
-          w-[95vw] max-w-[1100px]
-          max-h-[90vh] overflow-y-auto
-          p-6 sm:p-10
-          grid grid-cols-1 md:grid-cols-2 gap-10
-          rounded-xl
-        "
-      >
-        {/* HEADER */}
-        <DialogHeader className="col-span-full">
-          <DialogTitle className="text-2xl font-bold">
-            {productDetails.title}
-          </DialogTitle>
-          <DialogDescription>
-            See full product details, pricing and description.
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={(v) => !v && handleDialogClose()}>
+      <DialogContent className="max-w-5xl p-0 overflow-hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleDialogClose}
+          className="absolute right-3 top-3"
+        >
+          <X />
+        </Button>
 
-        {/* IMAGE */}
-        <div className="aspect-square rounded-xl overflow-hidden">
-          <img
-            src={productDetails.image}
-            alt={productDetails.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* Image */}
+          <div className="bg-muted">
+            <img
+              src={productDetails.image || "https://via.placeholder.com/600"}
+              alt={productDetails.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-        {/* DETAILS */}
-        <div className="flex flex-col justify-between">
-          <div>
-            <p className="text-muted-foreground mb-4">
-              {productDetails.description}
-            </p>
+          {/* Info */}
+          <div className="p-6 overflow-y-auto">
+            {isOnSale && (
+              <Badge className="mb-3 bg-red-600 text-white">On Sale</Badge>
+            )}
 
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-2xl font-bold">
-                ₵{productDetails.price}
+            <DialogTitle className="text-2xl font-bold mb-2">
+              {productDetails.title}
+            </DialogTitle>
+
+            {/* Rating */}
+            <div className="flex items-center gap-2 mb-4 text-sm">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={cn(
+                    "h-4 w-4",
+                    i < Math.floor(productDetails.rating || 4)
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-gray-300"
+                  )}
+                />
+              ))}
+              <span className="text-muted-foreground">
+                {productDetails.rating || 4.7}
               </span>
+            </div>
 
-              {productDetails.salePrice > 0 && (
-                <span className="text-2xl font-bold text-green-600">
-                  ₵{productDetails.salePrice}
+            {/* Price */}
+            <div className="mb-6">
+              <span className="text-3xl font-bold text-primary">
+                ₵{isOnSale ? productDetails.salePrice : productDetails.price}
+              </span>
+              {isOnSale && (
+                <span className="ml-3 line-through text-muted-foreground">
+                  ₵{productDetails.price}
                 </span>
               )}
             </div>
 
-            {/* ADD TO CART */}
+            <Separator className="my-6" />
+
+            {/* Quantity */}
+            <div className="flex items-center gap-4 mb-6">
+              <Button size="icon" variant="outline" onClick={decrementQuantity}>
+                <Minus />
+              </Button>
+              <span className="font-medium">{quantity}</span>
+              <Button size="icon" variant="outline" onClick={incrementQuantity}>
+                <Plus />
+              </Button>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <Button
+                onClick={() => {
+                  handleAddtoCart({ ...productDetails, quantity });
+                  handleDialogClose();
+                }}
+                disabled={productDetails.totalStock <= 0}
+              >
+                <ShoppingBag className="mr-2 h-5 w-5" />
+                Add to Cart
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleWishlistToggle}
+                disabled={wishlistLoading}
+              >
+                <Heart
+                  className={cn(
+                    "mr-2 h-5 w-5",
+                    isInWishlist && "fill-red-500 text-red-500"
+                  )}
+                />
+                Save
+              </Button>
+            </div>
+
             <Button
-              className="w-fit"
-              onClick={() => handleAddtoCart(productDetails)}
+              variant="ghost"
+              className="w-full mb-8"
+              onClick={handleShare}
             >
-              Add to Cart
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
             </Button>
 
-            {/* RATING */}
-            <div className="flex items-center gap-1 mt-4">
-              {[...Array(5)].map((_, i) => (
-                <StarIcon
-                  key={i}
-                  className="w-5 h-5 fill-primary text-primary"
+            {/* Tabs */}
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="specs">Specs</TabsTrigger>
+                <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="details" className="mt-4 text-sm">
+                {productDetails.description || "No description available."}
+              </TabsContent>
+
+              <TabsContent value="specs" className="mt-4 text-sm">
+                <p>Category: {productDetails.category}</p>
+                <p>Brand: {productDetails.brand}</p>
+              </TabsContent>
+
+              <TabsContent value="reviews" className="mt-4 space-y-4">
+                <Textarea
+                  placeholder="Write a review..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
                 />
-              ))}
-              <span className="ml-2 text-muted-foreground">
-                {productDetails.rating || 4.5}
-              </span>
-            </div>
-          </div>
-
-          <Separator className="my-6" />
-
-          {/* REVIEWS */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Reviews</h3>
-
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex gap-4 mb-4">
-                <Avatar>
-                  <AvatarFallback>MO</AvatarFallback>
-                </Avatar>
-
-                <div>
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, j) => (
-                      <StarIcon
-                        key={j}
-                        className="w-4 h-4 fill-primary text-primary"
-                      />
-                    ))}
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">
-                    Great product! Really satisfied.
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {/* REVIEW INPUT */}
-            <div className="flex gap-2 mt-4">
-              <Input placeholder="Write a review..." />
-              <Button>Submit</Button>
-            </div>
+                <Button
+                  onClick={() => {
+                    if (!reviewText.trim()) return;
+                    toast.success("Review submitted");
+                    setReviewText("");
+                  }}
+                >
+                  Submit
+                </Button>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </DialogContent>

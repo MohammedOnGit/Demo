@@ -1,4 +1,6 @@
-import React from "react";
+
+// AdminOrdersViews.jsx - JavaScript version
+import React, { useState } from "react";
 import {
   Card,
   CardHeader,
@@ -7,7 +9,9 @@ import {
   CardFooter,
 } from "../ui/card";
 import { Button } from "../ui/button";
-import { TrashIcon, SquarePen } from "lucide-react";
+import { Badge } from "../ui/badge";
+import { Edit2, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function AdminProductTile({
   product,
@@ -16,118 +20,104 @@ function AdminProductTile({
   setFormData,
   handleDelete,
 }) {
-  const hasSalePrice = product?.salePrice && product.salePrice > 0;
+  const hasSalePrice = product?.salePrice > 0;
+  const isOutOfStock = product?.stock === 0;
 
-  const maxLength = 30;
-  function truncateImgTitle(imgTitle, maxLength) {
-    if (!imgTitle) return "";
-    return imgTitle.length > maxLength
-      ? imgTitle.substring(0, maxLength) + "..."
-      : imgTitle;
-  }
+  const truncateTitle = (title, maxLength = 40) => {
+    if (!title) return "Untitled Product";
+    return title.length > maxLength ? `${title.substring(0, maxLength)}...` : title;
+  };
 
   return (
-    <div
-      className="
-        relative
-        h-fit
-        w-full
-        max-w-sm
-        sm:max-w-md
-        mx-auto
-        rounded-xl
-        bg-gradient-to-r 
-        from-neutral-600 
-        to-violet-300 
-        shadow-lg
-        overflow-hidden
-      "
+    <Card className="group relative overflow-hidden border shadow-sm transition-all hover:shadow-lg"
+      style={{ minHeight: '300px', maxHeight: '400px' }}
     >
-      {/* ✅ IMAGE */}
-      <div className="w-full">
+      {/* Image Section */}
+      <div className="relative aspect-video overflow-hidden bg-muted">
         <img
-          src={product?.image}
-          alt={product?.title}
-          className="
-            w-full
-            aspect-video
-            object-cover
-            rounded-t-xl
-          "
+          src={product?.image || "/placeholder.svg"}
+          alt={product?.title || "Product image"}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+
+        {/* Stock Badge */}
+        {isOutOfStock && (
+          <Badge
+            variant="destructive"
+            className="absolute left-2 top-2 text-xs font-semibold"
+          >
+            Out of Stock
+          </Badge>
+        )}
+
+        {/* Sale Badge */}
+        {hasSalePrice && (
+          <Badge className="absolute right-2 top-2 bg-primary text-primary-foreground text-xs font-bold">
+            SALE
+          </Badge>
+        )}
       </div>
 
-      {/* ✅ CONTENT CARD */}
-      <Card className="border-none rounded-none">
-        <CardHeader className="p-3 sm:p-4">
-          <CardTitle className="text-left text-sm sm:text-base md:text-lg">
-            {truncateImgTitle(product?.title, maxLength)}
-          </CardTitle>
-        </CardHeader>
+      {/* Content */}
+      <CardHeader className="pb-3">
+        <CardTitle className="line-clamp-2 text-base font-medium leading-tight">
+          {truncateTitle(product?.title)}
+        </CardTitle>
+      </CardHeader>
 
-        {/* ✅ PRICE SECTION */}
-        <CardContent className="flex items-center justify-between gap-2 px-3 sm:px-4 pb-4">
-          <span
-            className={`font-extrabold text-xs sm:text-sm md:text-base ${
-              hasSalePrice ? "line-through text-gray-400" : "text-black"
-            }`}
-          >
-            GHC {product?.price}
-          </span>
-
-          {hasSalePrice && (
-            <span className="text-sm sm:text-base md:text-lg font-semibold text-black">
-              GHC {product?.salePrice}
+      <CardContent className="pb-4">
+        {/* Price Section */}
+        <div className="flex items-baseline gap-3">
+          {hasSalePrice ? (
+            <>
+              <span className="text-lg font-bold text-primary">
+                GHS {product.salePrice.toFixed(2)}
+              </span>
+              <span className="text-sm text-muted-foreground line-through">
+                GHS {product.price.toFixed(2)}
+              </span>
+            </>
+          ) : (
+            <span className="text-lg font-bold">
+              GHS {product?.price?.toFixed(2) || "0.00"}
             </span>
           )}
-        </CardContent>
+        </div>
 
-        {/* ✅ BUTTONS */}
-        <CardFooter
-          className="
-            flex gap-2
-            flex-col
-            sm:flex-row
-            items-stretch
-            sm:items-center
-            sm:justify-between
-            px-3
-            sm:px-4
-            pb-4
-          "
+        {/* Stock Info */}
+        <p className="mt-2 text-sm text-muted-foreground">
+          {product?.stock > 0
+            ? `${product.stock} in stock`
+            : "Currently unavailable"}
+        </p>
+      </CardContent>
+
+      {/* Actions */}
+      <CardFooter className="flex gap-2 pt-2">
+        <Button
+          size="sm"
+          className="flex-1 gap-2"
+          onClick={() => {
+            setCurrentEditedId(product._id);
+            setFormData(product);
+            setOpenCreateProductDialog(true);
+          }}
         >
-          <Button
-            className="
-              w-full sm:w-auto
-              flex items-center justify-center gap-2
-              from-blue-600 via-blue-500/60 to-blue-600
-              bg-transparent bg-gradient-to-r text-white
-            "
-            onClick={() => {
-              setCurrentEditedId(product._id);
-              setOpenCreateProductDialog(true);
-              setFormData(product);
-            }}
-          >
-            <SquarePen className="w-4 h-4" />
-            Edit
-          </Button>
+          <Edit2 className="h-4 w-4" />
+          Edit
+        </Button>
 
-          <Button
-            onClick={() => handleDelete(product?._id)}
-            className="
-              w-full sm:w-auto
-              flex items-center justify-center gap-2
-              from-destructive via-destructive/60 to-destructive
-              bg-transparent bg-gradient-to-r text-white
-            "
-          >
-            <TrashIcon className="w-4 h-4" />
-            Delete
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="flex-1 gap-2"
+          onClick={() => handleDelete(product._id)}
+        >
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
 
