@@ -12,6 +12,8 @@ const adminProductRoutes = require("./routes/admin/product-routes");
 const shopProductsRoutes = require("./routes/shop/products-routes");
 const shopCartRoutes = require("./routes/shop/cart-routes");
 const shopAddressRoutes = require("./routes/shop/address-routes");
+const shopSearchRoutes = require("./routes/shop/search-routes");
+const shopWishlistRoutes = require("./routes/shop/wishlist-routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -54,6 +56,8 @@ app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/shop/products", shopProductsRoutes);
 app.use("/api/shop/cart", shopCartRoutes);
 app.use("/api/shop/address", shopAddressRoutes);
+app.use("/api/shop/search", shopSearchRoutes);
+app.use("/api/shop/wishlist", shopWishlistRoutes); // ADD THIS LINE
 
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/", (req, res) => {
