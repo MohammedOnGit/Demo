@@ -2,16 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Minus, Plus, Trash2, Heart } from "lucide-react";
 import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
-import {
-  deleteCartItem,
-  updateCartQuantity,
-} from "@/store/shop/cart-slice";
-import {
-  addToWishlist,
-  removeFromWishlist,
-  fetchWishlist,
-} from "@/store/shop/wishlist-slice";
+import { deleteCartItem, updateCartQuantity } from "@/store/shop/cart-slice";
+import { addToWishlist, removeFromWishlist, fetchWishlist } from "@/store/shop/wishlist-slice";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -37,23 +29,15 @@ function UserCartItemsContent({ cartItem }) {
   const isInWishlist = React.useMemo(() => {
     const cartProductId = cartItem?.productId || cartItem?._id;
     return wishlistItems?.some(
-      (item) =>
-        item.product?._id === cartProductId ||
-        item.productId === cartProductId
+      (item) => item.product?._id === cartProductId || item.productId === cartProductId
     );
   }, [wishlistItems, cartItem]);
 
   const handleCartItemDelete = async () => {
     if (!user?.id || !cartItem?.productId) return;
     setIsDeleting(true);
-
     try {
-      await dispatch(
-        deleteCartItem({
-          userId: user.id,
-          productId: cartItem.productId,
-        })
-      ).unwrap();
+      await dispatch(deleteCartItem({ userId: user.id, productId: cartItem.productId })).unwrap();
       toast.success("Item removed");
     } catch {
       toast.error("Failed to remove item");
@@ -67,20 +51,10 @@ function UserCartItemsContent({ cartItem }) {
     if (type === "decrement" && cartItem.quantity === 1) return;
 
     setIsUpdatingQuantity(true);
-
-    const quantity =
-      type === "increment"
-        ? cartItem.quantity + 1
-        : cartItem.quantity - 1;
+    const quantity = type === "increment" ? cartItem.quantity + 1 : cartItem.quantity - 1;
 
     try {
-      await dispatch(
-        updateCartQuantity({
-          userId: user.id,
-          productId: cartItem.productId,
-          quantity,
-        })
-      ).unwrap();
+      await dispatch(updateCartQuantity({ userId: user.id, productId: cartItem.productId, quantity })).unwrap();
     } catch {
       toast.error("Failed to update cart");
     } finally {
@@ -90,7 +64,6 @@ function UserCartItemsContent({ cartItem }) {
 
   const moveToWishlist = async () => {
     if (!user?.id) return toast.info("Please login");
-
     const productId = cartItem?.productId || cartItem?._id;
     setIsMovingToWishlist(true);
 
@@ -122,63 +95,25 @@ function UserCartItemsContent({ cartItem }) {
 
       {/* Info */}
       <div className="flex-1">
-        <h3 className="text-sm font-medium line-clamp-2">
-          {cartItem?.title}
-        </h3>
-
+        <h3 className="text-sm font-medium line-clamp-2">{cartItem?.title}</h3>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm font-semibold text-primary">
-            GHC {displayPrice.toFixed(2)}
-          </span>
-          {isOnSale && (
-            <span className="text-xs line-through text-muted-foreground">
-              GHC {cartItem.price.toFixed(2)}
-            </span>
-          )}
+          <span className="text-sm font-semibold text-primary">GHC {displayPrice.toFixed(2)}</span>
+          {isOnSale && <span className="text-xs line-through text-muted-foreground">GHC {cartItem.price.toFixed(2)}</span>}
         </div>
 
-        {/* Quantity */}
         <div className="flex items-center gap-2 mt-3">
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-7 w-7"
-            onClick={() => handleUpdateQuantity("decrement")}
-            disabled={isUpdatingQuantity || cartItem.quantity === 1}
-          >
+          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => handleUpdateQuantity("decrement")} disabled={isUpdatingQuantity || cartItem.quantity === 1}>
             <Minus className="h-3 w-3" />
           </Button>
 
-          <span className="text-sm font-medium">
-            {cartItem.quantity}
-          </span>
+          <span className="text-sm font-medium">{cartItem.quantity}</span>
 
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-7 w-7"
-            onClick={() => handleUpdateQuantity("increment")}
-            disabled={isUpdatingQuantity}
-          >
+          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => handleUpdateQuantity("increment")} disabled={isUpdatingQuantity}>
             <Plus className="h-3 w-3" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "text-xs",
-              isInWishlist && "text-red-500"
-            )}
-            onClick={moveToWishlist}
-            disabled={isMovingToWishlist || wishlistLoading}
-          >
-            <Heart
-              className={cn(
-                "h-3 w-3 mr-1",
-                isInWishlist && "fill-red-500"
-              )}
-            />
+          <Button variant="ghost" size="sm" className={cn("text-xs", isInWishlist && "text-red-500")} onClick={moveToWishlist} disabled={isMovingToWishlist || wishlistLoading}>
+            <Heart className={cn("h-3 w-3 mr-1", isInWishlist && "fill-red-500")} />
             Save
           </Button>
         </div>
@@ -186,17 +121,8 @@ function UserCartItemsContent({ cartItem }) {
 
       {/* Price + Delete */}
       <div className="flex flex-col items-end justify-between">
-        <p className="font-semibold text-primary">
-          GHC {totalPrice.toFixed(2)}
-        </p>
-
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={handleCartItemDelete}
-          disabled={isDeleting}
-          className="text-muted-foreground hover:text-destructive"
-        >
+        <p className="font-semibold text-primary">GHC {totalPrice.toFixed(2)}</p>
+        <Button size="icon" variant="ghost" onClick={handleCartItemDelete} disabled={isDeleting} className="text-muted-foreground hover:text-destructive">
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
