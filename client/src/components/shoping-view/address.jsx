@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import CommonForm from "../common/form";
 import AddressCard from "./address-card";
@@ -29,12 +29,20 @@ const initialAddressFormData = {
 function Address() {
   const dispatch = useDispatch();
   const { addressList, isLoading } = useSelector((state) => state.shopAddress);
+  const lastFetchRef = useRef(0);
+  const fetchCooldown = 15000; // 15 seconds between fetches
 
   const [formData, setFormData] = useState(initialAddressFormData);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    const now = Date.now();
+    if (now - lastFetchRef.current < fetchCooldown) {
+      return;
+    }
+    
+    lastFetchRef.current = now;
     dispatch(fetchAllAddresses());
   }, [dispatch]);
 
@@ -78,7 +86,7 @@ function Address() {
     }
 
     if (!isValidPhone(formData.phone)) {
-      toast.error("Please enter a valid phone number");
+      toast.error("Please enter a valid phone number (10-15 digits)");
       return;
     }
 
@@ -108,6 +116,9 @@ function Address() {
 
       setFormData(initialAddressFormData);
       setIsAddingNew(false);
+      
+      // Invalidate address cache
+      lastFetchRef.current = 0;
     } catch (error) {
       toast.error(error?.message || "Operation failed");
     }
@@ -122,6 +133,9 @@ function Address() {
         setFormData(initialAddressFormData);
         setIsAddingNew(false);
       }
+      
+      // Invalidate address cache
+      lastFetchRef.current = 0;
     } catch (error) {
       toast.error("Failed to delete address");
     }
@@ -188,7 +202,10 @@ function Address() {
 
         {/* Address List */}
         {isLoading ? (
-          <div className="text-center py-12">Loading addresses...</div>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="mt-2 text-muted-foreground">Loading addresses...</p>
+          </div>
         ) : filteredAddresses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAddresses.map((addressItem) => (

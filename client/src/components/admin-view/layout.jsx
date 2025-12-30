@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 import AdminSideBar from "./sidebar";
 import AdminHeader from "./header";
 import { useState, useEffect } from "react";
-import { useViewportHeight } from "../hooks/useViewportHeight";
+import { useViewportHeight } from "../../hooks/useViewportHeight";
 import { cn } from "@/lib/utils";
 
 function AdminLayout() {

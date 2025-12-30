@@ -65,17 +65,39 @@ import {
   fetchSearchSuggestions
 } from "@/store/shop/search-slice";
 
+// Import our request manager
+import { requestManager } from "@/utils/request-manager";
+
 /* ---------------- WISHLIST INDICATOR ---------------- */
 function WishlistIndicator({ isMobile = false }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { items, isLoading, wishlistCount } = useSelector((state) => state.wishlist);
   const { user } = useSelector((state) => state.auth);
+  const lastFetchRef = useRef(0);
+  const fetchCooldown = 30000; // 30 seconds between fetches
 
   useEffect(() => {
-    if (user) {
-      dispatch(fetchWishlist());
+    if (!user) return;
+    
+    const now = Date.now();
+    if (now - lastFetchRef.current < fetchCooldown) {
+      // Use cached data if available
+      return;
     }
+    
+    lastFetchRef.current = now;
+    
+    // Throttled wishlist fetch
+    const fetchWishlistThrottled = debounce(() => {
+      dispatch(fetchWishlist());
+    }, 1000);
+    
+    fetchWishlistThrottled();
+    
+    return () => {
+      fetchWishlistThrottled.cancel();
+    };
   }, [dispatch, user]);
 
   if (isMobile) {
@@ -219,16 +241,23 @@ function SearchComponent({ variant = "desktop" }) {
       }
 
       setIsLoading(true);
-      dispatch(fetchSearchSuggestions(query))
-        .unwrap()
-        .then((data) => {
-          setSuggestions(data.suggestions || []);
-          setIsLoading(false);
-        })
-        .catch(() => {
-          setIsLoading(false);
-        });
-    }, 300),
+      
+      // Use request manager for deduplication
+      requestManager.makeRequest(
+        `search-suggestions-${query}`,
+        () => dispatch(fetchSearchSuggestions(query)).unwrap(),
+        { cacheDuration: 10000 } // Cache suggestions for 10 seconds
+      )
+      .then((data) => {
+        setSuggestions(data.suggestions || []);
+      })
+      .catch(() => {
+        // Silently fail for rate limits
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+    }, 500), // Increased debounce time
     [dispatch]
   );
 
@@ -495,11 +524,30 @@ function CartIndicator({ isMobile = false, onClick }) {
   const { user } = useSelector((state) => state.auth);
   const { cartItems = [] } = useSelector((state) => state.shopCart);
   const [openCartSheet, setOpenCartSheet] = useState(false);
+  const lastFetchRef = useRef(0);
+  const fetchCooldown = 10000; // 10 seconds between fetches
   
   useEffect(() => {
-    if (user?.id) {
-      dispatch(fetchCartItems(user.id));
+    if (!user?.id) return;
+    
+    const now = Date.now();
+    if (now - lastFetchRef.current < fetchCooldown) {
+      // Use cached data
+      return;
     }
+    
+    lastFetchRef.current = now;
+    
+    // Throttled cart fetch
+    const fetchCartThrottled = debounce(() => {
+      dispatch(fetchCartItems(user.id));
+    }, 1000);
+    
+    fetchCartThrottled();
+    
+    return () => {
+      fetchCartThrottled.cancel();
+    };
   }, [dispatch, user?.id]);
   
   const cartCount = useMemo(

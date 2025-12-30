@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import UserCartItemsContent from "./cart-items-content";
 import { Separator } from "../ui/separator";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, PackageOpen, Lock } from "lucide-react";
+import { ShoppingBag, PackageOpen, Lock, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
@@ -39,7 +39,7 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
 
   const format = useCallback((amount) => `GHC ${amount.toFixed(2)}`, []);
 
-  // Simple fade-out animation when closing normally
+  // Close sheet with animation
   const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
@@ -65,6 +65,18 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
     setIsClosing(false);
   }, [cartItems.length]);
 
+  // Handle escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleClose]);
+
   return (
     <SheetContent
       side="right"
@@ -72,7 +84,7 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
         "w-full sm:max-w-md h-full flex flex-col p-0 transition-all duration-300",
         isClosing && "opacity-0 translate-x-full"
       )}
-      onCloseAutoFocus={(e) => e.preventDefault()} // Prevent focus issues
+      onCloseAutoFocus={(e) => e.preventDefault()}
       onEscapeKeyDown={handleClose}
       onPointerDownOutside={handleClose}
     >
@@ -102,24 +114,32 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
         onWheel={(e) => e.stopPropagation()}
       >
         {hasItems ? (
-          cartItems.map((item, i) => (
-            <div key={`${item.productId}-${i}`}>
-              <UserCartItemsContent cartItem={item} />
-              {i < cartItems.length - 1 && <Separator className="my-4" />}
-            </div>
-          ))
+          <>
+            {cartItems.map((item, i) => (
+              <div key={`${item.productId}-${i}`}>
+                <UserCartItemsContent cartItem={item} />
+                {i < cartItems.length - 1 && <Separator className="my-4" />}
+              </div>
+            ))}
+          </>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-center">
-            <PackageOpen className="h-10 w-10 mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Your cart is empty</p>
+          <div className="h-full flex flex-col items-center justify-center text-center p-6">
+            <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">
+              <PackageOpen className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Your cart is empty</h3>
+            <p className="text-muted-foreground mb-6">
+              Add some products to get started
+            </p>
             <Button 
               variant="outline" 
-              className="mt-4" 
+              className="gap-2"
               onClick={() => {
                 handleClose();
                 navigate("/shop/listing");
               }}
             >
+              <ShoppingCart className="h-4 w-4" />
               Browse Products
             </Button>
           </div>
@@ -145,9 +165,13 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
             </div>
           </div>
 
-          <Button className="w-full h-11" onClick={checkout}>
-            <Lock className="h-4 w-4 mr-2" />
-            Checkout
+          <Button 
+            className="w-full h-11 gap-2" 
+            onClick={checkout}
+            size="lg"
+          >
+            <Lock className="h-4 w-4" />
+            Proceed to Checkout
           </Button>
           
           <Button 
@@ -158,10 +182,21 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
               navigate("/shop/cart");
             }}
           >
-            View Full Cart
+            View Full Cart Details
           </Button>
         </div>
       )}
+      
+      {/* Close button for mobile */}
+      <div className="lg:hidden border-t p-4">
+        <Button 
+          variant="ghost" 
+          className="w-full" 
+          onClick={handleClose}
+        >
+          Close
+        </Button>
+      </div>
     </SheetContent>
   );
 }
