@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import { Card, CardContent, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
@@ -231,7 +229,10 @@ function AddressCard({
             variant="ghost"
             size="sm"
             className="flex-1 gap-2"
-            onClick={() => window.open(`https://maps.google.com/?q=${encodeURIComponent(address + ', ' + city)}`, '_blank')}
+            onClick={() => {
+              const fullAddress = `${address}, ${city}`;
+              window.open(`https://maps.google.com/?q=${encodeURIComponent(fullAddress)}`, '_blank');
+            }}
           >
             <Navigation className="h-3.5 w-3.5" />
             Map

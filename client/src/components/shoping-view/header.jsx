@@ -1,4 +1,3 @@
-//Wishlist Update
 import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   House,
@@ -73,7 +72,6 @@ function WishlistIndicator({ isMobile = false }) {
   const { items, isLoading, wishlistCount } = useSelector((state) => state.wishlist);
   const { user } = useSelector((state) => state.auth);
 
-  // Fetch wishlist on component mount if user is logged in
   useEffect(() => {
     if (user) {
       dispatch(fetchWishlist());
@@ -496,6 +494,7 @@ function CartIndicator({ isMobile = false, onClick }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { cartItems = [] } = useSelector((state) => state.shopCart);
+  const [openCartSheet, setOpenCartSheet] = useState(false);
   
   useEffect(() => {
     if (user?.id) {
@@ -533,33 +532,35 @@ function CartIndicator({ isMobile = false, onClick }) {
   }
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="relative h-10 w-10 rounded-full hover:bg-primary/5 transition-colors"
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {cartCount > 0 && (
-            <>
-              <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-full animate-bounce">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-              <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-primary whitespace-nowrap">
-                GHC {totalPrice.toFixed(2)}
-              </span>
-            </>
-          )}
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-md p-0">
-        <UserCartWrapper 
-          cartItems={cartItems} 
-          setOpenCartSheet={onClick}
-        />
-      </SheetContent>
-    </Sheet>
+    <>
+      <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="relative h-10 w-10 rounded-full hover:bg-primary/5 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <>
+                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-600 text-white text-xs font-bold rounded-full animate-bounce">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+                <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-primary whitespace-nowrap">
+                  GHC {totalPrice.toFixed(2)}
+                </span>
+              </>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-md p-0">
+          <UserCartWrapper 
+            cartItems={cartItems} 
+            setOpenCartSheet={setOpenCartSheet}
+          />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 

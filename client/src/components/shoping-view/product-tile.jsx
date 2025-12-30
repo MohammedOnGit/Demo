@@ -77,14 +77,19 @@ function ShoppingProductTile({ product, handleGetProductDetails, handleAddtoCart
     (e) => {
       e.preventDefault();
       e.stopPropagation();
+      e.nativeEvent.stopImmediatePropagation();
       handleGetProductDetails(product._id || product.id);
     },
     [handleGetProductDetails, product]
   );
 
-  const handleOpenDetails = useCallback(() => {
-    handleGetProductDetails(product._id || product.id);
-  }, [handleGetProductDetails, product]);
+  const handleOpenDetails = useCallback(
+    (e) => {
+      e.stopPropagation();
+      handleGetProductDetails(product._id || product.id);
+    },
+    [handleGetProductDetails, product]
+  );
 
   return (
     <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border">
