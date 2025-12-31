@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { clearAllUserData } from "../clear-slice";
 
 // ======================
 // Initial State
@@ -53,18 +54,24 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Logout user
+// Logout user - UPDATED TO CLEAR USER DATA
 export const logoutUser = createAsyncThunk(
   "auth/logout",
-  async (_, thunkAPI) => {
+  async (_, { dispatch }) => {
     try {
       const response = await axios.post(
         "http://localhost:5000/api/auth/logout", 
         {},
         { withCredentials: true }
       );
+      
+      // Clear all user-related data from other slices
+      dispatch(clearAllUserData());
+      
       return response.data;
     } catch (error) {
+      // Even if server logout fails, clear local user data
+      dispatch(clearAllUserData());
       return thunkAPI.rejectWithValue(
         error.response?.data || "Something went wrong"
       );
@@ -176,7 +183,7 @@ const authSlice = createSlice({
         state.error = action.payload || "Authentication check failed";
       });
 
-    // Logout
+    // Logout - UPDATED
     builder
       .addCase(logoutUser.pending, (state) => {
         state.isLoading = true;

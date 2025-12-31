@@ -85,7 +85,13 @@ export const updateCartQuantity = createAsyncThunk(
 const shoppingCartSlice = createSlice({
   name: "shoppingCart",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCart: (state) => {
+      state.cartItems = [];
+      state.isLoading = false;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       /* ADD */
@@ -124,8 +130,16 @@ const shoppingCartSlice = createSlice({
       /* DELETE */
       .addCase(deleteCartItem.fulfilled, (state, action) => {
         state.cartItems = action.payload || [];
+      })
+
+      /* CLEAR ON LOGOUT - Listen for clearAllUserData action */
+      .addCase('clear/clearAllUserData', (state) => {
+        state.cartItems = [];
+        state.isLoading = false;
+        state.error = null;
       });
   },
 });
 
+export const { clearCart } = shoppingCartSlice.actions;
 export default shoppingCartSlice.reducer;

@@ -4,7 +4,6 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Create a separate module-level Set for tracking pending requests
-// This is NOT stored in Redux state
 const pendingRequests = new Set();
 
 const initialState = {
@@ -15,17 +14,15 @@ const initialState = {
   lastUpdated: null
 };
 
-// Helper to check if request is pending (not stored in Redux)
+// Helper functions
 function isRequestPending(key) {
   return pendingRequests.has(key);
 }
 
-// Helper to mark request as pending (not stored in Redux)
 function markRequestPending(key) {
   pendingRequests.add(key);
 }
 
-// Helper to mark request as completed (not stored in Redux)
 function markRequestCompleted(key) {
   pendingRequests.delete(key);
 }
@@ -36,7 +33,6 @@ export const fetchWishlist = createAsyncThunk(
   async (_, { rejectWithValue, getState }) => {
     const requestKey = 'fetch-wishlist';
     
-    // Check if request is already pending
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
     }
@@ -46,7 +42,7 @@ export const fetchWishlist = createAsyncThunk(
       
       const response = await axios.get(`${API_BASE_URL}/shop/wishlist`, {
         withCredentials: true,
-        timeout: 10000 // Add timeout to prevent hanging requests
+        timeout: 10000
       });
       
       if (response.data.success) {
@@ -55,13 +51,11 @@ export const fetchWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to fetch wishlist");
       }
     } catch (error) {
-      // Handle 429 rate limiting specifically
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
       return rejectWithValue(error.response?.data?.message || "Failed to fetch wishlist");
     } finally {
-      // Always mark as completed, even on error
       setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
@@ -73,7 +67,6 @@ export const addToWishlist = createAsyncThunk(
   async (productId, { rejectWithValue, getState }) => {
     const requestKey = `add-wishlist-${productId}`;
     
-    // Check if request is already pending
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
     }
@@ -96,7 +89,6 @@ export const addToWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to add to wishlist");
       }
     } catch (error) {
-      // Handle 429 rate limiting
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
@@ -113,7 +105,6 @@ export const removeFromWishlist = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     const requestKey = `remove-wishlist-${productId}`;
     
-    // Check if request is already pending
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
     }
@@ -135,7 +126,6 @@ export const removeFromWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to remove from wishlist");
       }
     } catch (error) {
-      // Handle 429 rate limiting
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
@@ -152,7 +142,6 @@ export const moveToCart = createAsyncThunk(
   async ({ productId, quantity = 1 }, { rejectWithValue }) => {
     const requestKey = `move-to-cart-${productId}`;
     
-    // Check if request is already pending
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
     }
@@ -160,7 +149,6 @@ export const moveToCart = createAsyncThunk(
     try {
       markRequestPending(requestKey);
       
-      // First add to cart
       const cartResponse = await axios.post(
         `${API_BASE_URL}/shop/cart/add`,
         { productId, quantity },
@@ -171,7 +159,6 @@ export const moveToCart = createAsyncThunk(
       );
       
       if (cartResponse.data.success) {
-        // Then remove from wishlist
         await axios.delete(
           `${API_BASE_URL}/shop/wishlist/remove/${productId}`,
           { 
@@ -185,7 +172,6 @@ export const moveToCart = createAsyncThunk(
         return rejectWithValue(cartResponse.data.message || "Failed to move to cart");
       }
     } catch (error) {
-      // Handle 429 rate limiting
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
@@ -202,7 +188,6 @@ export const checkWishlistStatus = createAsyncThunk(
   async (productIds, { rejectWithValue }) => {
     const requestKey = `check-wishlist-${productIds.sort().join('-')}`;
     
-    // Check if request is already pending
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
     }
@@ -225,7 +210,6 @@ export const checkWishlistStatus = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to check wishlist status");
       }
     } catch (error) {
-      // Handle 429 rate limiting - return empty data instead of error
       if (error.response?.status === 429) {
         console.warn('Rate limited for wishlist check');
         return { inWishlist: [], count: 0 };
@@ -245,14 +229,13 @@ const wishlistSlice = createSlice({
       state.items = [];
       state.wishlistCount = 0;
       state.error = null;
+      state.lastUpdated = new Date().toISOString();
     },
     updateWishlistCount: (state, action) => {
       state.wishlistCount = action.payload;
     },
-    // Add optimistic update reducers
     addOptimistic: (state, action) => {
       const { product } = action.payload;
-      // Check if already in wishlist
       const exists = state.items.find(item => item.product?._id === product._id);
       if (!exists) {
         state.items.unshift({ 
@@ -298,7 +281,6 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Check if item already exists
         const exists = state.items.find(item => item.product?._id === action.payload.productId);
         if (!exists) {
           state.items.unshift(action.payload);
@@ -345,10 +327,18 @@ const wishlistSlice = createSlice({
       
       // Check wishlist status
       .addCase(checkWishlistStatus.fulfilled, (state, action) => {
-        // Update wishlist count if available
         if (action.payload.count !== undefined) {
           state.wishlistCount = action.payload.count;
         }
+      })
+      
+      /* CLEAR ON LOGOUT - Listen for clearAllUserData action */
+      .addCase('clear/clearAllUserData', (state) => {
+        state.items = [];
+        state.wishlistCount = 0;
+        state.isLoading = false;
+        state.error = null;
+        state.lastUpdated = new Date().toISOString();
       });
   }
 });

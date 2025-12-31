@@ -1,4 +1,3 @@
-
 import { configureStore } from "@reduxjs/toolkit";
 
 // Auth
@@ -11,9 +10,11 @@ import adminProductsReducer from "./admin/product-slice";
 import shopProductsReducer from "./shop/products-slice";
 import shopCartReducer from "./shop/cart-slice";
 import shopAddressSlice from "./shop/address-slice";
-import searchReducer from "./shop/search-slice"; // Add this import
-import wishlistReducer from "./shop/wishlist-slice"; // Add this
+import searchReducer from "./shop/search-slice";
+import wishlistReducer from "./shop/wishlist-slice";
 
+// Clear reducer
+import clearReducer from "./clear-slice";
 
 const store = configureStore({
   reducer: {
@@ -22,9 +23,9 @@ const store = configureStore({
     shopProducts: shopProductsReducer,
     shopCart: shopCartReducer,
     shopAddress: shopAddressSlice,
-    search: searchReducer, // Add this line
-    wishlist: wishlistReducer, // Add this
-
+    search: searchReducer,
+    wishlist: wishlistReducer,
+    clear: clearReducer,
   },
 });
 

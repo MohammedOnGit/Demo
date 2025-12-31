@@ -64,6 +64,8 @@ import {
   setSearchQuery,
   fetchSearchSuggestions
 } from "@/store/shop/search-slice";
+import { clearCart } from "@/store/shop/cart-slice";
+import { clearWishlist } from "@/store/shop/wishlist-slice";
 
 // Import our request manager
 import { requestManager } from "@/utils/request-manager";
@@ -99,6 +101,13 @@ function WishlistIndicator({ isMobile = false }) {
       fetchWishlistThrottled.cancel();
     };
   }, [dispatch, user]);
+
+  // Clear wishlist when user logs out
+  useEffect(() => {
+    if (!user) {
+      dispatch(clearWishlist());
+    }
+  }, [user, dispatch]);
 
   if (isMobile) {
     return (
@@ -560,6 +569,13 @@ function CartIndicator({ isMobile = false, onClick }) {
     };
   }, [dispatch, user?.id]);
   
+  // Clear cart when user logs out
+  useEffect(() => {
+    if (!user) {
+      dispatch(clearCart());
+    }
+  }, [user, dispatch]);
+  
   const cartCount = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
     [cartItems]
@@ -666,6 +682,7 @@ function UserMenu() {
       })
       .catch((error) => {
         console.error("Logout failed:", error);
+        // Still navigate home even if logout failed
         navigate("/shop/home");
       });
   }, [dispatch, navigate]);
