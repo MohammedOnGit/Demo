@@ -154,7 +154,8 @@ function WishlistIndicator({ isMobile = false }) {
 /* ---------------- MENU ITEMS COMPONENT ---------------- */
 function MenuItem({ onNavigate, isMobile = false }) {
   const location = useLocation();
-  const currentPath = location.pathname;
+  const searchParams = new URLSearchParams(location.search);
+  const currentCategory = searchParams.get('category');
 
   const iconMap = {
     House: House,
@@ -175,9 +176,17 @@ function MenuItem({ onNavigate, isMobile = false }) {
     )}>
       {shopingViewHeaderMenuItems.map((menuItem) => {
         const IconComponent = iconMap[menuItem.icon] || House;
-        const isActive = currentPath === menuItem.path || 
-                        (menuItem.id === "home" && currentPath === "/shop/home") ||
-                        (menuItem.id !== "home" && currentPath.includes("/shop/listing"));
+        
+        // Fix: Check if we're on shop/listing page and category matches
+        let isActive = false;
+        if (menuItem.id === "home") {
+          // Home is active only when path is exactly /shop/home
+          isActive = location.pathname === "/shop/home";
+        } else {
+          // For category items, check if we're on /shop/listing and category matches
+          isActive = location.pathname === "/shop/listing" && 
+                     currentCategory === menuItem.id;
+        }
 
         return (
           <button
@@ -521,6 +530,7 @@ function SearchComponent({ variant = "desktop" }) {
 /* ---------------- CART INDICATOR ---------------- */
 function CartIndicator({ isMobile = false, onClick }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const { cartItems = [] } = useSelector((state) => state.shopCart);
   const [openCartSheet, setOpenCartSheet] = useState(false);
@@ -560,22 +570,39 @@ function CartIndicator({ isMobile = false, onClick }) {
     [cartItems]
   );
 
+  const handleMobileClick = () => {
+    if (onClick) onClick(); // Close mobile menu if provided
+    setOpenCartSheet(true); // Open cart sheet
+  };
+
   if (isMobile) {
     return (
-      <Button
-        variant="outline"
-        size="default"
-        className="w-full justify-start gap-3"
-        onClick={onClick}
-      >
-        <ShoppingCart className="h-4 w-4" />
-        <span className="text-sm">Shopping Cart</span>
-        {cartCount > 0 && (
-          <Badge className="ml-auto bg-primary text-primary-foreground">
-            {cartCount} item{cartCount !== 1 ? 's' : ''}
-          </Badge>
-        )}
-      </Button>
+      <>
+        <Button
+          variant="outline"
+          size="default"
+          className="w-full justify-start gap-3"
+          onClick={handleMobileClick}
+        >
+          <ShoppingCart className="h-4 w-4" />
+          <span className="text-sm">Shopping Cart</span>
+          {cartCount > 0 && (
+            <Badge className="ml-auto bg-primary text-primary-foreground">
+              {cartCount} item{cartCount !== 1 ? 's' : ''}
+            </Badge>
+          )}
+        </Button>
+        
+        {/* Mobile Cart Sheet */}
+        <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+          <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <UserCartWrapper 
+              cartItems={cartItems} 
+              setOpenCartSheet={setOpenCartSheet}
+            />
+          </SheetContent>
+        </Sheet>
+      </>
     );
   }
 
@@ -834,6 +861,8 @@ function ShoppingHeader() {
   const [isMounted, setIsMounted] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const currentCategory = searchParams.get('category');
 
   useEffect(() => {
     setIsMounted(true);
@@ -919,7 +948,10 @@ function ShoppingHeader() {
                     <div className="space-y-3">
                       <SearchComponent variant="mobile" />
                       <WishlistIndicator isMobile />
-                      <CartIndicator isMobile onClick={() => setMobileOpen(false)} />
+                      <CartIndicator 
+                        isMobile 
+                        onClick={() => setMobileOpen(false)} 
+                      />
                       <UserMenu />
                     </div>
                   </div>
@@ -1000,14 +1032,26 @@ function ShoppingHeader() {
                 };
                 const IconComponent = iconMap[menuItem.icon] || House;
                 
+                // Fix: Check if category matches for mobile too
+                const isActive = location.pathname === "/shop/listing" && 
+                               currentCategory === menuItem.id;
+                
                 return (
                   <button
                     key={menuItem.id}
-                    className="text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-full bg-background border hover:bg-primary/10 hover:border-primary/30 transition-colors flex items-center gap-1"
+                    className={cn(
+                      "text-xs font-medium whitespace-nowrap px-3 py-1.5 rounded-full transition-colors flex items-center gap-1",
+                      isActive 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-background border hover:bg-primary/10 hover:border-primary/30"
+                    )}
                     onClick={() => handleNavigate(menuItem)}
                   >
                     <IconComponent className="h-3 w-3" />
                     {menuItem.label}
+                    {isActive && (
+                      <div className="ml-1 h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
+                    )}
                   </button>
                 );
               })}
