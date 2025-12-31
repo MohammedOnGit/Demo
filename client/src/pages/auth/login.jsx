@@ -22,12 +22,12 @@ function AuthLogin() {
       const data = await dispatch(loginUser(formData));
 
       const message = data?.payload?.message;
-      const user = data?.payload?.user; // ✅ lowercase matches backend response
+      const user = data?.payload?.user;
 
       if (data?.payload?.success) {
         toast.success(message || "Login successful");
 
-        // ✅ Redirect based on role
+        // Redirect based on role
         if (user?.role === "admin") {
           navigate("/admin/dashboard");
         } else {

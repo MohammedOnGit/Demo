@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from "react-router-dom"; // Removed BrowserRouter import
+import { Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,7 +34,7 @@ const CheckAuth = lazy(() => import("./components/common/check-auth"));
 const UnAuthPage = lazy(() => import("./pages/unauth-page"));
 
 // Redux
-import { useSelector, useDispatch } from "react-redux"; // Removed Provider import
+import { useSelector, useDispatch } from "react-redux";
 import { checkAuth } from "./store/auth-slice";
 
 // Loading fallback component
@@ -127,6 +127,10 @@ function App() {
             <Route path="search" element={<SearchPage />} />
             <Route path="wishlist" element={<Wishlist />} />
           </Route>
+
+          {/* ===================== REDIRECTS FOR OLD LOGIN PATHS ===================== */}
+          <Route path="/shop/login" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/shop/register" element={<Navigate to="/auth/register" replace />} />
 
           {/* ===================== UNAUTHORIZED & 404 ===================== */}
           <Route path="/unauth-page" element={<UnAuthPage />} />

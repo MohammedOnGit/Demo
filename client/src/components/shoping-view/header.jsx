@@ -106,7 +106,7 @@ function WishlistIndicator({ isMobile = false }) {
         variant="outline"
         size="default"
         className="w-full justify-start gap-3"
-        onClick={() => user ? navigate("/shop/wishlist") : navigate("/shop/login")}
+        onClick={() => user ? navigate("/shop/wishlist") : navigate("/auth/login")}
         disabled={!user}
       >
         <Heart className="h-4 w-4" />
@@ -128,7 +128,7 @@ function WishlistIndicator({ isMobile = false }) {
       variant="ghost"
       size="icon"
       className="relative h-10 w-10 rounded-full hover:bg-pink-50 dark:hover:bg-pink-950/20 transition-colors group"
-      onClick={() => user ? navigate("/shop/wishlist") : navigate("/shop/login")}
+      onClick={() => user ? navigate("/shop/wishlist") : navigate("/auth/login")}
       aria-label="Wishlist"
       disabled={isLoading}
     >
@@ -648,7 +648,7 @@ function UserMenu() {
       <Button
         variant="outline"
         className="gap-2"
-        onClick={() => navigate("/shop/login")}
+        onClick={() => navigate("/auth/login")}
       >
         <User className="h-4 w-4" />
         <span>Sign In</span>

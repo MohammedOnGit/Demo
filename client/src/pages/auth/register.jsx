@@ -1,8 +1,7 @@
-// src/pages/auth/AuthRegister.jsx
 import CommonForm from "@/components/common/form";
 import { toast } from "sonner";
 import { registerFormControls } from "@/config";
-import { registerUser } from "@/store/auth-slice"; // ✅ Redux thunk
+import { registerUser } from "@/store/auth-slice";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
@@ -27,7 +26,7 @@ function AuthRegister() {
 
       if (data?.success) {
         toast.success(data?.message || "Account created successfully!");
-        navigate("/auth/login"); // ✅ redirect to login after success
+        navigate("/auth/login");
       } else {
         toast.error(data?.message || "Registration failed. Try again.");
       }
