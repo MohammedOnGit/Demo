@@ -139,7 +139,7 @@ export const removeFromWishlist = createAsyncThunk(
 // Move item from wishlist to cart
 export const moveToCart = createAsyncThunk(
   'wishlist/moveToCart',
-  async ({ productId, quantity = 1 }, { rejectWithValue }) => {
+  async ({ productId, quantity = 1 }, { rejectWithValue, getState, dispatch }) => {
     const requestKey = `move-to-cart-${productId}`;
     
     if (isRequestPending(requestKey)) {
@@ -149,8 +149,8 @@ export const moveToCart = createAsyncThunk(
     try {
       markRequestPending(requestKey);
       
-      const cartResponse = await axios.post(
-        `${API_BASE_URL}/shop/cart/add`,
+      const response = await axios.post(
+        `${API_BASE_URL}/shop/wishlist/move-to-cart`,
         { productId, quantity },
         { 
           withCredentials: true,
@@ -158,35 +158,38 @@ export const moveToCart = createAsyncThunk(
         }
       );
       
-      if (cartResponse.data.success) {
-        await axios.delete(
-          `${API_BASE_URL}/shop/wishlist/remove/${productId}`,
-          { 
-            withCredentials: true,
-            timeout: 8000
-          }
-        );
-        
-        return { productId, cartItem: cartResponse.data.data };
+      if (response.data.success) {
+        return { 
+          productId, 
+          cartItems: response.data.data.cartItems,
+          wishlistCount: response.data.data.wishlistCount 
+        };
       } else {
-        return rejectWithValue(cartResponse.data.message || "Failed to move to cart");
+        return rejectWithValue(response.data.message || "Failed to move to cart");
       }
     } catch (error) {
+      console.error("Move to cart error:", error);
+      
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
-      return rejectWithValue(error.response?.data?.message || "Failed to move to cart");
+      
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to move item to cart"
+      );
     } finally {
       setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
 
-// Check if item is in wishlist
-export const checkWishlistStatus = createAsyncThunk(
-  'wishlist/checkStatus',
-  async (productIds, { rejectWithValue }) => {
-    const requestKey = `check-wishlist-${productIds.sort().join('-')}`;
+// Move multiple items from wishlist to cart
+export const moveSelectedToCart = createAsyncThunk(
+  'wishlist/moveSelectedToCart',
+  async (productIds, { rejectWithValue, getState, dispatch }) => {
+    const requestKey = `move-selected-to-cart-${productIds.sort().join('-')}`;
     
     if (isRequestPending(requestKey)) {
       return rejectWithValue("Request already in progress");
@@ -196,25 +199,37 @@ export const checkWishlistStatus = createAsyncThunk(
       markRequestPending(requestKey);
       
       const response = await axios.post(
-        `${API_BASE_URL}/shop/wishlist/check`,
+        `${API_BASE_URL}/shop/wishlist/move-selected-to-cart`,
         { productIds },
         { 
           withCredentials: true,
-          timeout: 8000
+          timeout: 15000 // Longer timeout for batch operations
         }
       );
       
       if (response.data.success) {
-        return response.data.data;
+        return { 
+          movedItems: response.data.data.movedItems,
+          failedItems: response.data.data.failedItems,
+          inStockItems: response.data.data.inStockItems,
+          cartItems: response.data.data.cartItems,
+          wishlistCount: response.data.data.wishlistCount 
+        };
       } else {
-        return rejectWithValue(response.data.message || "Failed to check wishlist status");
+        return rejectWithValue(response.data.message || "Failed to move items to cart");
       }
     } catch (error) {
+      console.error("Move selected to cart error:", error);
+      
       if (error.response?.status === 429) {
-        console.warn('Rate limited for wishlist check');
-        return { inWishlist: [], count: 0 };
+        return rejectWithValue("Rate limited. Please try again in a moment.");
       }
-      return rejectWithValue(error.response?.data?.message || "Failed to check wishlist status");
+      
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to move items to cart"
+      );
     } finally {
       setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
@@ -281,7 +296,7 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
-        const exists = state.items.find(item => item.product?._id === action.payload.productId);
+        const exists = state.items.find(item => item.product?._id === action.payload.product?._id);
         if (!exists) {
           state.items.unshift(action.payload);
           state.wishlistCount += 1;
@@ -300,7 +315,10 @@ const wishlistSlice = createSlice({
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = state.items.filter(item => item.product?._id !== action.payload.productId);
+        state.items = state.items.filter(item => 
+          item.product?._id !== action.payload.productId && 
+          item._id !== action.payload.productId
+        );
         state.wishlistCount = Math.max(0, state.wishlistCount - 1);
         state.lastUpdated = new Date().toISOString();
       })
@@ -309,15 +327,26 @@ const wishlistSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Move to cart
+      // Move to cart (single item)
       .addCase(moveToCart.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(moveToCart.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = state.items.filter(item => item.product?._id !== action.payload.productId);
-        state.wishlistCount = Math.max(0, state.wishlistCount - 1);
+        // Remove item from wishlist state
+        state.items = state.items.filter(item => 
+          item.product?._id !== action.payload.productId && 
+          item.productId !== action.payload.productId
+        );
+        
+        // Update wishlist count
+        if (action.payload.wishlistCount !== undefined) {
+          state.wishlistCount = action.payload.wishlistCount;
+        } else {
+          state.wishlistCount = Math.max(0, state.wishlistCount - 1);
+        }
+        
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(moveToCart.rejected, (state, action) => {
@@ -325,11 +354,34 @@ const wishlistSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Check wishlist status
-      .addCase(checkWishlistStatus.fulfilled, (state, action) => {
-        if (action.payload.count !== undefined) {
-          state.wishlistCount = action.payload.count;
+      // Move selected to cart (multiple items)
+      .addCase(moveSelectedToCart.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(moveSelectedToCart.fulfilled, (state, action) => {
+        state.isLoading = false;
+        
+        // Remove moved items from wishlist state
+        if (action.payload.movedItems && action.payload.movedItems.length > 0) {
+          state.items = state.items.filter(item => {
+            const productId = item.product?._id || item.productId;
+            return !action.payload.movedItems.includes(productId);
+          });
         }
+        
+        // Update wishlist count
+        if (action.payload.wishlistCount !== undefined) {
+          state.wishlistCount = action.payload.wishlistCount;
+        } else if (action.payload.movedItems) {
+          state.wishlistCount = Math.max(0, state.wishlistCount - action.payload.movedItems.length);
+        }
+        
+        state.lastUpdated = new Date().toISOString();
+      })
+      .addCase(moveSelectedToCart.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       })
       
       /* CLEAR ON LOGOUT - Listen for clearAllUserData action */
@@ -343,5 +395,11 @@ const wishlistSlice = createSlice({
   }
 });
 
-export const { clearWishlist, updateWishlistCount, addOptimistic, removeOptimistic } = wishlistSlice.actions;
+export const { 
+  clearWishlist, 
+  updateWishlistCount, 
+  addOptimistic, 
+  removeOptimistic 
+} = wishlistSlice.actions;
+
 export default wishlistSlice.reducer;
