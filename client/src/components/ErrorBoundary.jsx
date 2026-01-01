@@ -1,4 +1,3 @@
-// src/components/ErrorBoundary.jsx
 import React from 'react';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,27 +26,55 @@ class ErrorBoundary extends React.Component {
       window.analytics.track('error_occurred', {
         error: error.toString(),
         componentStack: errorInfo.componentStack,
-        url: window.location.href
+        url: window.location.href,
+        timestamp: new Date().toISOString()
       });
     }
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    });
+    
+    // Clear any local storage errors if present
+    localStorage.removeItem('lastWishlistFetchError');
+    
     if (this.props.onRetry) {
       this.props.onRetry();
     }
   };
 
   handleGoHome = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null 
+    });
+    
     if (this.props.navigate) {
       this.props.navigate('/shop/home');
     }
   };
 
+  handleClearCache = () => {
+    // Clear relevant localStorage items
+    localStorage.removeItem('lastWishlistFetch');
+    localStorage.removeItem('lastWishlistFetchError');
+    localStorage.removeItem('wishlistCache');
+    
+    // Reload the page
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
+      const errorMessage = this.state.error?.message || 'An unexpected error occurred. Please try again.';
+      const isNetworkError = errorMessage.includes('Network') || errorMessage.includes('timeout');
+      const isAuthError = errorMessage.includes('auth') || errorMessage.includes('login') || errorMessage.includes('unauthorized');
+      
       return (
         <div className="min-h-[400px] flex flex-col items-center justify-center p-6 text-center bg-background">
           <div className="max-w-md w-full">
@@ -55,38 +82,62 @@ class ErrorBoundary extends React.Component {
               <AlertCircle className="h-8 w-8 text-red-600" />
             </div>
             
-            <h3 className="text-xl font-semibold mb-2">Something went wrong</h3>
+            <h3 className="text-xl font-semibold mb-2">
+              {isNetworkError ? 'Connection Error' : 
+               isAuthError ? 'Authentication Required' : 
+               'Something went wrong'}
+            </h3>
+            
             <p className="text-muted-foreground mb-4">
-              {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
+              {errorMessage}
             </p>
             
             {this.props.showDetails && this.state.errorInfo && (
               <details className="mb-4 text-left">
-                <summary className="cursor-pointer text-sm font-medium mb-2">Error Details</summary>
-                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40">
+                <summary className="cursor-pointer text-sm font-medium mb-2 hover:text-primary">
+                  Error Details
+                </summary>
+                <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-40 font-mono">
+                  {this.state.error?.toString()}
+                  {"\n\n"}
                   {this.state.errorInfo.componentStack}
                 </pre>
               </details>
             )}
             
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                onClick={this.handleRetry} 
-                className="gap-2 flex-1 sm:flex-none"
-                variant="default"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Try Again
-              </Button>
-              
-              {this.props.showHomeButton && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button 
-                  onClick={this.handleGoHome} 
+                  onClick={this.handleRetry} 
                   className="gap-2 flex-1 sm:flex-none"
-                  variant="outline"
+                  variant="default"
+                  size="lg"
                 >
-                  <Home className="h-4 w-4" />
-                  Go Home
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
+                
+                {this.props.showHomeButton && (
+                  <Button 
+                    onClick={this.handleGoHome} 
+                    className="gap-2 flex-1 sm:flex-none"
+                    variant="outline"
+                    size="lg"
+                  >
+                    <Home className="h-4 w-4" />
+                    Go Home
+                  </Button>
+                )}
+              </div>
+              
+              {isNetworkError && (
+                <Button 
+                  onClick={this.handleClearCache} 
+                  className="gap-2"
+                  variant="ghost"
+                  size="sm"
+                >
+                  Clear Cache & Reload
                 </Button>
               )}
             </div>
@@ -105,12 +156,42 @@ class ErrorBoundary extends React.Component {
 export function withErrorBoundary(Component, options = {}) {
   return function WrappedComponent(props) {
     const navigate = useNavigate();
+    const errorBoundaryProps = {
+      navigate,
+      showDetails: options.showDetails || false,
+      showHomeButton: options.showHomeButton !== false,
+      onRetry: options.onRetry,
+      ...options
+    };
+    
     return (
-      <ErrorBoundary navigate={navigate} {...options}>
+      <ErrorBoundary {...errorBoundaryProps}>
         <Component {...props} />
       </ErrorBoundary>
     );
   };
+}
+
+// Higher-order component for class components
+export function withErrorBoundaryHOC(Component, options = {}) {
+  return class extends React.Component {
+    render() {
+      return (
+        <ErrorBoundary {...options}>
+          <Component {...this.props} />
+        </ErrorBoundary>
+      );
+    }
+  };
+}
+
+// Error boundary provider for wrapping app
+export function ErrorBoundaryProvider({ children, fallback, ...props }) {
+  return (
+    <ErrorBoundary {...props}>
+      {children}
+    </ErrorBoundary>
+  );
 }
 
 export default ErrorBoundary;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -6,25 +6,19 @@ import {
   ShoppingBag,
   Trash2,
   ArrowRight,
-  Share2,
-  Tag,
-  Package,
   Clock,
   CheckCircle,
-  AlertCircle,
-  ChevronRight,
-  Star,
   Filter,
   Grid,
   List,
   ShoppingCart,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,16 +38,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useCartSync } from '@/hooks/useCartSync';
 import {
   fetchWishlist,
   removeFromWishlist,
   moveToCart,
-  moveSelectedToCart  // ADD THIS IMPORT
+  moveSelectedToCart,
+  clearWishlistError
 } from "@/store/shop/wishlist-slice";
 
 const Wishlist = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { syncCart } = useCartSync();
   
   const { user } = useSelector((state) => state.auth);
   const { items, isLoading, error } = useSelector((state) => state.wishlist);
@@ -63,20 +60,79 @@ const Wishlist = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [sortBy, setSortBy] = useState("recent");
+  const [localLoading, setLocalLoading] = useState(false);
+  
+  const isInitialMount = useRef(true);
+  const isFetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
-  // Fetch wishlist on component mount
-  useEffect(() => {
-    if (user) {
-      dispatch(fetchWishlist());
+  const cleanup = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-  }, [dispatch, user]);
+    isFetchingRef.current = false;
+    setLocalLoading(false);
+  }, []);
 
-  // Redirect to login if not authenticated
+  const fetchWishlistData = useCallback(async () => {
+    if (!user || isFetchingRef.current) {
+      return;
+    }
+
+    try {
+      isFetchingRef.current = true;
+      setLocalLoading(true);
+      
+      abortControllerRef.current = new AbortController();
+      
+      await dispatch(fetchWishlist()).unwrap();
+      hasFetchedRef.current = true;
+      
+    } catch (error) {
+      console.error("Failed to fetch wishlist:", error);
+    } finally {
+      cleanup();
+    }
+  }, [user, dispatch, cleanup]);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchWishlistData();
+    }
+  }, [fetchWishlistData]);
+
+  useEffect(() => {
+    return () => {
+      cleanup();
+      dispatch(clearWishlistError());
+    };
+  }, [dispatch, cleanup]);
+
   useEffect(() => {
     if (!user) {
-      navigate("/shop/login");
+      navigate("/shop/login", { replace: true });
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user && !isFetchingRef.current) {
+        const shouldRefresh = Date.now() - (localStorage.getItem('lastWishlistFetch') || 0) > 30000;
+        if (shouldRefresh) {
+          fetchWishlistData();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, fetchWishlistData]);
 
   const handleSelectItem = (itemId) => {
     setSelectedItems(prev =>
@@ -99,21 +155,25 @@ const Wishlist = () => {
       await dispatch(moveToCart({ productId, quantity: 1 })).unwrap();
       toast.success("Item moved to cart successfully!");
       setSelectedItems(prev => prev.filter(id => id !== productId));
+      
+      // Sync cart after moving
+      syncCart();
+      
+      localStorage.setItem('lastWishlistFetch', Date.now());
+      
     } catch (error) {
       console.error("Move to cart error:", error);
       toast.error(error || "Failed to move item to cart");
     }
   };
   
-  // UPDATED: Use the batch move action
   const handleMoveSelectedToCart = async () => {
     if (selectedItems.length === 0) return;
     
     try {
-      // Use the batch move action instead of multiple individual calls
+      setLocalLoading(true);
       const result = await dispatch(moveSelectedToCart(selectedItems)).unwrap();
       
-      // Show appropriate message based on result
       if (result.failedItems && result.failedItems.length > 0) {
         const successCount = result.movedItems?.length || 0;
         const failCount = result.failedItems.length;
@@ -121,22 +181,27 @@ const Wishlist = () => {
         toast.warning(
           `Moved ${successCount} items. ${failCount} failed.`,
           {
-            description: result.failedItems.map(item => 
-              `Product ${item.productId}: ${item.reason}`
-            ).join(', ')
+            description: result.failedItems.slice(0, 3).map(item => 
+              `Product ${item.productId?.slice(-6)}: ${item.reason}`
+            ).join(', ') + (result.failedItems.length > 3 ? '...' : '')
           }
         );
       } else {
         const movedCount = result.movedItems?.length || selectedItems.length;
-        toast.success(`${movedCount} items moved to cart!`);
+        toast.success(`${movedCount} item${movedCount !== 1 ? 's' : ''} moved to cart!`);
       }
       
-      // Clear selected items
+      // Sync cart after moving
+      syncCart();
+      
       setSelectedItems([]);
+      localStorage.setItem('lastWishlistFetch', Date.now());
       
     } catch (error) {
       console.error("Move selected to cart error:", error);
       toast.error(error || "Failed to move items to cart");
+    } finally {
+      setLocalLoading(false);
     }
   };
 
@@ -151,6 +216,7 @@ const Wishlist = () => {
         await dispatch(removeFromWishlist(itemToDelete)).unwrap();
         toast.success("Item removed from wishlist");
         setSelectedItems(prev => prev.filter(id => id !== itemToDelete));
+        localStorage.setItem('lastWishlistFetch', Date.now());
       } catch (error) {
         console.error("Remove item error:", error);
         toast.error("Failed to remove item from wishlist");
@@ -164,7 +230,7 @@ const Wishlist = () => {
     if (selectedItems.length === 0) return;
     
     try {
-      // Process removals sequentially to avoid state issues
+      setLocalLoading(true);
       let successCount = 0;
       let failedCount = 0;
       
@@ -181,13 +247,17 @@ const Wishlist = () => {
       if (failedCount > 0) {
         toast.warning(`Removed ${successCount} items. ${failedCount} failed.`);
       } else {
-        toast.success(`${successCount} items removed from wishlist`);
+        toast.success(`${successCount} item${successCount !== 1 ? 's' : ''} removed from wishlist`);
       }
       
       setSelectedItems([]);
+      localStorage.setItem('lastWishlistFetch', Date.now());
+      
     } catch (error) {
       console.error("Remove selected error:", error);
       toast.error("Failed to remove items from wishlist");
+    } finally {
+      setLocalLoading(false);
     }
   };
 
@@ -196,7 +266,7 @@ const Wishlist = () => {
   };
 
   const getStockStatus = (stock) => {
-    if (stock === 0) return { text: "Out of Stock", color: "destructive" };
+    if (stock === 0 || !stock) return { text: "Out of Stock", color: "destructive" };
     if (stock <= 5) return { text: "Low Stock", color: "warning" };
     return { text: "In Stock", color: "success" };
   };
@@ -221,7 +291,7 @@ const Wishlist = () => {
         return sorted.sort((a, b) => 
           (a.product?.title || "").localeCompare(b.product?.title || "")
         );
-      default: // recent
+      default:
         return sorted.sort((a, b) => 
           new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         );
@@ -242,11 +312,73 @@ const Wishlist = () => {
     item.product?.totalStock && item.product.totalStock > 0
   ).length;
 
+  const handleRetryFetch = () => {
+    if (!isFetchingRef.current) {
+      fetchWishlistData();
+    }
+  };
+
+  const handleGoToHome = () => {
+    navigate("/shop/home");
+  };
+
+  const handleGoToShop = () => {
+    navigate("/shop/listing");
+  };
+
   if (!user) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/10 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Please log in to view your wishlist</h2>
+          <Button onClick={() => navigate("/shop/login")}>Go to Login</Button>
+        </div>
+      </div>
+    );
   }
 
-  if (isLoading) {
+  const isPageLoading = isLoading || localLoading;
+  const showError = error && !isPageLoading;
+  const hasItems = items.length > 0;
+
+  if (showError && !hasFetchedRef.current) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/10">
+        <div className="container mx-auto px-4 py-8">
+          <Card className="py-16 border-2 rounded-2xl border-destructive/50 bg-destructive/5">
+            <CardContent className="text-center p-8">
+              <div className="mx-auto w-32 h-32 bg-destructive/10 rounded-full flex items-center justify-center mb-8">
+                <AlertTriangle className="h-16 w-16 text-destructive" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4">Error Loading Wishlist</h3>
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                {error}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={handleRetryFetch}
+                  className="gap-2"
+                  disabled={isPageLoading}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {isPageLoading ? "Loading..." : "Try Again"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleGoToHome}
+                >
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  Go to Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPageLoading && !hasFetchedRef.current) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/10">
         <div className="container mx-auto px-4 py-8">
@@ -256,7 +388,6 @@ const Wishlist = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar */}
             <div className="lg:col-span-1">
               <Card className="p-6">
                 <Skeleton className="h-6 w-32 mb-6" />
@@ -268,7 +399,6 @@ const Wishlist = () => {
               </Card>
             </div>
             
-            {/* Main Content */}
             <div className="lg:col-span-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
@@ -289,54 +419,25 @@ const Wishlist = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/10">
-        <div className="container mx-auto px-4 py-8">
-          <Card className="py-16 border-2 rounded-2xl border-destructive/50 bg-destructive/5">
-            <CardContent className="text-center p-8">
-              <div className="mx-auto w-32 h-32 bg-destructive/10 rounded-full flex items-center justify-center mb-8">
-                <AlertTriangle className="h-16 w-16 text-destructive" />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Error Loading Wishlist</h3>
-              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                {error}
-              </p>
-              <Button
-                onClick={() => dispatch(fetchWishlist())}
-                className="gap-2"
-              >
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/10">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
-                  <Heart className="h-6 w-6 text-red-600" fill="currentColor" />
-                </div>
-                My Wishlist
-              </h1>
-              <p className="text-muted-foreground">
-                Save items you love for later
-              </p>
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-red-50 flex items-center justify-center">
+                <Heart className="h-6 w-6 text-red-600" fill="currentColor" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold mb-2">My Wishlist</h1>
+                <p className="text-muted-foreground">Save items you love for later</p>
+              </div>
             </div>
             
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2" disabled={!hasItems || isPageLoading}>
                     <Filter className="h-4 w-4" />
                     Sort
                   </Button>
@@ -365,6 +466,7 @@ const Wishlist = () => {
                   size="icon"
                   onClick={() => setViewMode("grid")}
                   className="rounded-none h-10 w-10"
+                  disabled={!hasItems || isPageLoading}
                 >
                   <Grid className="h-4 w-4" />
                 </Button>
@@ -373,6 +475,7 @@ const Wishlist = () => {
                   size="icon"
                   onClick={() => setViewMode("list")}
                   className="rounded-none h-10 w-10"
+                  disabled={!hasItems || isPageLoading}
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -380,26 +483,19 @@ const Wishlist = () => {
             </div>
           </div>
           
-          {/* Stats */}
           <Card className="mb-8 border-2">
             <CardContent className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">
-                    {items.length}
-                  </div>
+                  <div className="text-3xl font-bold text-primary mb-2">{items.length}</div>
                   <div className="text-sm text-muted-foreground">Total Items</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 mb-2">
-                    {itemsOnSale}
-                  </div>
+                  <div className="text-3xl font-bold text-amber-600 mb-2">{itemsOnSale}</div>
                   <div className="text-sm text-muted-foreground">On Sale</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
-                    {inStockItems}
-                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">{inStockItems}</div>
                   <div className="text-sm text-muted-foreground">In Stock</div>
                 </div>
                 <div className="text-center">
@@ -413,8 +509,7 @@ const Wishlist = () => {
           </Card>
         </div>
         
-        {/* Actions Bar */}
-        {items.length > 0 && (
+        {hasItems && (
           <div className="mb-8 p-4 bg-muted/30 rounded-2xl border">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -425,6 +520,7 @@ const Wishlist = () => {
                     checked={selectedItems.length === items.length && items.length > 0}
                     onChange={handleSelectAll}
                     className="h-5 w-5 rounded border-2"
+                    disabled={isPageLoading}
                   />
                   <label htmlFor="select-all" className="text-sm font-medium">
                     Select All ({selectedItems.length} selected)
@@ -438,7 +534,7 @@ const Wishlist = () => {
                       size="sm"
                       onClick={handleMoveSelectedToCart}
                       className="gap-2"
-                      disabled={isLoading}
+                      disabled={isPageLoading}
                     >
                       <ShoppingCart className="h-4 w-4" />
                       Move {selectedItems.length} to Cart
@@ -448,7 +544,7 @@ const Wishlist = () => {
                       size="sm"
                       onClick={handleRemoveSelected}
                       className="gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
-                      disabled={isLoading}
+                      disabled={isPageLoading}
                     >
                       <Trash2 className="h-4 w-4" />
                       Remove Selected
@@ -458,14 +554,13 @@ const Wishlist = () => {
               </div>
               
               <div className="text-sm text-muted-foreground">
-                {items.length} items
+                {items.length} item{items.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
         )}
         
-        {/* Wishlist Content */}
-        {items.length === 0 ? (
+        {!hasItems ? (
           <Card className="py-16 border-2 rounded-2xl">
             <CardContent className="text-center p-8">
               <div className="mx-auto w-32 h-32 bg-muted/30 rounded-full flex items-center justify-center mb-8">
@@ -477,19 +572,11 @@ const Wishlist = () => {
                 They'll appear here for easy access later.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  size="lg"
-                  onClick={() => navigate("/shop/listing")}
-                  className="gap-2"
-                >
+                <Button size="lg" onClick={handleGoToShop} className="gap-2">
                   <ArrowRight className="h-5 w-5" />
                   Start Shopping
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate("/shop/home")}
-                >
+                <Button variant="outline" size="lg" onClick={handleGoToHome}>
                   Browse Collections
                 </Button>
               </div>
@@ -503,57 +590,53 @@ const Wishlist = () => {
               const stockStatus = getStockStatus(product?.totalStock || 0);
               
               return (
-                <Card key={wishlistItem._id} className="group overflow-hidden border-2 rounded-2xl hover:shadow-xl transition-all duration-300">
+                <Card key={wishlistItem._id || productId} className="group overflow-hidden border-2 rounded-2xl hover:shadow-xl transition-all duration-300">
                   <CardContent className="p-0">
-                    {/* Image Section */}
                     <div className="relative overflow-hidden">
                       <div className="aspect-square">
                         <img
                           src={product?.image || "/placeholder.jpg"}
                           alt={product?.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            e.target.src = "/placeholder.jpg";
+                          }}
                         />
                       </div>
                       
-                      {/* Badges */}
                       <div className="absolute top-3 left-3 flex flex-col gap-2">
                         {product?.salePrice && product.salePrice < product.price && (
-                          <Badge className="bg-red-600 text-white font-bold px-3 py-1">
-                            SALE
-                          </Badge>
+                          <Badge className="bg-red-600 text-white font-bold px-3 py-1">SALE</Badge>
                         )}
                         <Badge variant={stockStatus.color} className="font-medium">
                           {stockStatus.text}
                         </Badge>
                       </div>
                       
-                      {/* Actions */}
                       <div className="absolute top-3 right-3 flex flex-col gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveItem(productId)}
                           className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg"
-                          disabled={isLoading}
+                          disabled={isPageLoading}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                       
-                      {/* Selection Checkbox */}
                       <div className="absolute top-3 left-3">
                         <input
                           type="checkbox"
                           checked={selectedItems.includes(productId)}
                           onChange={() => handleSelectItem(productId)}
                           className="h-5 w-5 rounded border-2 bg-white"
+                          disabled={isPageLoading}
                         />
                       </div>
                     </div>
                     
-                    {/* Content Section */}
                     <div className="p-5">
-                      {/* Category & Brand */}
                       <div className="flex items-center justify-between mb-3">
                         <Badge variant="outline" className="text-xs">
                           {product?.category || "Uncategorized"}
@@ -563,7 +646,6 @@ const Wishlist = () => {
                         </span>
                       </div>
                       
-                      {/* Title & Description */}
                       <h3 className="font-bold text-base line-clamp-1 mb-2 hover:text-primary cursor-pointer">
                         {product?.title || "Untitled Product"}
                       </h3>
@@ -571,7 +653,6 @@ const Wishlist = () => {
                         {product?.description || "No description available"}
                       </p>
                       
-                      {/* Price & Actions */}
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
@@ -600,7 +681,7 @@ const Wishlist = () => {
                             size="sm"
                             className="flex-1 gap-2"
                             onClick={() => handleMoveToCart(productId)}
-                            disabled={!product?.totalStock || product.totalStock === 0 || isLoading}
+                            disabled={!product?.totalStock || product.totalStock === 0 || isPageLoading}
                           >
                             <ShoppingBag className="h-4 w-4" />
                             Add to Cart
@@ -610,12 +691,12 @@ const Wishlist = () => {
                             size="sm"
                             className="flex-1"
                             onClick={() => navigate(`/shop/product/${productId}`)}
+                            disabled={isPageLoading}
                           >
                             View Details
                           </Button>
                         </div>
                         
-                        {/* Added Date */}
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -642,19 +723,20 @@ const Wishlist = () => {
               const stockStatus = getStockStatus(product?.totalStock || 0);
               
               return (
-                <Card key={wishlistItem._id} className="border-2 rounded-2xl">
+                <Card key={wishlistItem._id || productId} className="border-2 rounded-2xl">
                   <CardContent className="p-6">
                     <div className="flex flex-col sm:flex-row gap-6">
-                      {/* Image */}
                       <div className="sm:w-32 sm:h-32 flex-shrink-0">
                         <img
                           src={product?.image || "/placeholder.jpg"}
                           alt={product?.title}
                           className="w-full h-full object-cover rounded-lg"
+                          onError={(e) => {
+                            e.target.src = "/placeholder.jpg";
+                          }}
                         />
                       </div>
                       
-                      {/* Content */}
                       <div className="flex-1">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                           <div className="flex-1">
@@ -664,6 +746,7 @@ const Wishlist = () => {
                                 checked={selectedItems.includes(productId)}
                                 onChange={() => handleSelectItem(productId)}
                                 className="h-5 w-5 rounded border-2"
+                                disabled={isPageLoading}
                               />
                               <Badge variant="outline" className="text-xs">
                                 {product?.category || "Uncategorized"}
@@ -672,9 +755,7 @@ const Wishlist = () => {
                                 {stockStatus.text}
                               </Badge>
                               {product?.salePrice && product.salePrice < product.price && (
-                                <Badge className="bg-red-600 text-white text-xs">
-                                  SALE
-                                </Badge>
+                                <Badge className="bg-red-600 text-white text-xs">SALE</Badge>
                               )}
                             </div>
                             
@@ -702,7 +783,6 @@ const Wishlist = () => {
                             </div>
                           </div>
                           
-                          {/* Price & Actions */}
                           <div className="flex flex-col items-end gap-4">
                             <div className="text-right">
                               {product?.salePrice && product.salePrice < product.price ? (
@@ -728,7 +808,7 @@ const Wishlist = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleMoveToCart(productId)}
-                                disabled={!product?.totalStock || product.totalStock === 0 || isLoading}
+                                disabled={!product?.totalStock || product.totalStock === 0 || isPageLoading}
                                 className="gap-2"
                               >
                                 <ShoppingBag className="h-4 w-4" />
@@ -739,7 +819,7 @@ const Wishlist = () => {
                                 size="sm"
                                 onClick={() => handleRemoveItem(productId)}
                                 className="text-destructive"
-                                disabled={isLoading}
+                                disabled={isPageLoading}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -755,8 +835,7 @@ const Wishlist = () => {
           </div>
         )}
         
-        {/* Bottom Actions */}
-        {items.length > 0 && (
+        {hasItems && (
           <div className="mt-12 pt-8 border-t">
             <div className="flex flex-col sm:flex-row justify-between gap-6">
               <div className="flex-1">
@@ -780,15 +859,16 @@ const Wishlist = () => {
               <div className="flex flex-col gap-3">
                 <Button
                   variant="outline"
-                  onClick={() => navigate("/shop/listing")}
+                  onClick={handleGoToShop}
                   className="gap-2"
+                  disabled={isPageLoading}
                 >
                   <ArrowRight className="h-4 w-4" />
                   Continue Shopping
                 </Button>
                 <Button
                   onClick={handleMoveSelectedToCart}
-                  disabled={selectedItems.length === 0 || isLoading}
+                  disabled={selectedItems.length === 0 || isPageLoading}
                   className="gap-2"
                 >
                   <ShoppingBag className="h-4 w-4" />
@@ -800,7 +880,6 @@ const Wishlist = () => {
         )}
       </div>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -811,10 +890,11 @@ const Wishlist = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPageLoading}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRemoveItem}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isPageLoading}
             >
               Remove
             </AlertDialogAction>

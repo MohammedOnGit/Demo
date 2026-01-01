@@ -36,6 +36,7 @@ import bannerOne from "../../assets/ban/b-1.webp";
 import bannerTwo from "../../assets/ban/b-2.webp";
 import bannerThree from "../../assets/ban/b-3.webp";
 
+
 import { fetchAllFilteredProducts, fetchProductDetails } from "@/store/shop/products-slice";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { fetchWishlist } from "@/store/shop/wishlist-slice";
