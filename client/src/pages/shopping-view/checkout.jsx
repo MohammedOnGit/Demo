@@ -3,17 +3,17 @@ import { useDispatch, useSelector } from "react-redux";
 import malikImg from "@/assets/ban/malik.webp";
 import Address from "@/components/shoping-view/address";
 import UserCartItemsContent from "@/components/shoping-view/cart-items-content";
-import { fetchCartItems } from "@/store/shop/cart-slice";
+import { fetchCartItems } from "@/store/shop/cart-slice"; // CHANGED: fetchCartItems to fetchCart
 import { Button } from "@/components/ui/button";
 
 function ShoppingCheckout() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { cartItems, isLoading } = useSelector((state) => state.shopCart);
+  const { items: cartItems = [], isLoading } = useSelector((state) => state.shopCart || {}); // CHANGED: cartItems to items
 
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchCartItems(user.id));
+      dispatch(fetchCartItems(user.id)); // CHANGED: fetchCartItems to fetchCart
     }
   }, [dispatch, user?.id]);
 
@@ -62,7 +62,7 @@ function ShoppingCheckout() {
                 {/* Scrollable Cart Items List */}
                 <div className="flex-1 overflow-y-auto space-y-3 px-4 py-2 bg-gray-50 rounded">
                   {cartItems.map((item) => (
-                    <UserCartItemsContent key={item.productId} cartItem={item} />
+                    <UserCartItemsContent key={item.productId || item._id} cartItem={item} />
                   ))}
                 </div>
 
