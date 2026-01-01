@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { logoutUser } from "@/store/auth-slice";
-import { fetchCartItems } from "@/store/shop/cart-slice";
+import { fetchCartItems  } from "@/store/shop/cart-slice"; // FIXED: Changed from fetchCartItems to fetchCart
 import { fetchWishlist } from "@/store/shop/wishlist-slice";
 import UserCartWrapper from "./cart-wrapper";
 import { cn } from "@/lib/utils";
@@ -541,7 +541,7 @@ function CartIndicator({ isMobile = false, onClick }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { cartItems = [] } = useSelector((state) => state.shopCart);
+  const { items = [], cartCount = 0, subtotal = 0 } = useSelector((state) => state.shopCart || {}); // FIXED: Access shopCart
   const [openCartSheet, setOpenCartSheet] = useState(false);
   const lastFetchRef = useRef(0);
   const fetchCooldown = 10000; // 10 seconds between fetches
@@ -557,9 +557,9 @@ function CartIndicator({ isMobile = false, onClick }) {
     
     lastFetchRef.current = now;
     
-    // Throttled cart fetch
+    // Throttled cart fetch - FIXED: Using fetchCart not fetchCartItems
     const fetchCartThrottled = debounce(() => {
-      dispatch(fetchCartItems(user.id));
+      dispatch(fetchCartItems (user.id));
     }, 1000);
     
     fetchCartThrottled();
@@ -575,16 +575,6 @@ function CartIndicator({ isMobile = false, onClick }) {
       dispatch(clearCart());
     }
   }, [user, dispatch]);
-  
-  const cartCount = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.quantity, 0),
-    [cartItems]
-  );
-
-  const totalPrice = useMemo(
-    () => cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-    [cartItems]
-  );
 
   const handleMobileClick = () => {
     if (onClick) onClick(); // Close mobile menu if provided
@@ -613,7 +603,7 @@ function CartIndicator({ isMobile = false, onClick }) {
         <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
             <UserCartWrapper 
-              cartItems={cartItems} 
+              cartItems={items} // FIXED: Using items instead of cartItems
               setOpenCartSheet={setOpenCartSheet}
             />
           </SheetContent>
@@ -638,7 +628,7 @@ function CartIndicator({ isMobile = false, onClick }) {
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
                 <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-semibold text-primary whitespace-nowrap">
-                  GHC {totalPrice.toFixed(2)}
+                  GHC {subtotal.toFixed(2)}
                 </span>
               </>
             )}
@@ -646,7 +636,7 @@ function CartIndicator({ isMobile = false, onClick }) {
         </SheetTrigger>
         <SheetContent side="right" className="w-full sm:max-w-md p-0">
           <UserCartWrapper 
-            cartItems={cartItems} 
+            cartItems={items} // FIXED: Using items instead of cartItems
             setOpenCartSheet={setOpenCartSheet}
           />
         </SheetContent>

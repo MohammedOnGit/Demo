@@ -3,46 +3,43 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Create a separate module-level Set for tracking pending requests
-const pendingRequests = new Set();
-
 const initialState = {
   items: [],
   isLoading: false,
   error: null,
   wishlistCount: 0,
-  lastUpdated: null
+  lastUpdated: null,
+  isFetching: false
 };
 
-// Helper functions
-function isRequestPending(key) {
-  return pendingRequests.has(key);
-}
+let lastFetchRequestTime = 0;
+const FETCH_COOLDOWN_MS = 1000;
 
-function markRequestPending(key) {
-  pendingRequests.add(key);
-}
-
-function markRequestCompleted(key) {
-  pendingRequests.delete(key);
-}
-
-// Fetch user's wishlist
 export const fetchWishlist = createAsyncThunk(
   'wishlist/fetchWishlist',
   async (_, { rejectWithValue, getState }) => {
-    const requestKey = 'fetch-wishlist';
+    const now = Date.now();
     
-    if (isRequestPending(requestKey)) {
-      return rejectWithValue("Request already in progress");
+    if (now - lastFetchRequestTime < FETCH_COOLDOWN_MS) {
+      const state = getState();
+      if (state.wishlist.items.length > 0) {
+        return {
+          items: state.wishlist.items,
+          count: state.wishlist.wishlistCount
+        };
+      }
     }
     
+    lastFetchRequestTime = now;
+    
     try {
-      markRequestPending(requestKey);
-      
       const response = await axios.get(`${API_BASE_URL}/shop/wishlist`, {
         withCredentials: true,
-        timeout: 10000
+        timeout: 10000,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
       
       if (response.data.success) {
@@ -51,29 +48,29 @@ export const fetchWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to fetch wishlist");
       }
     } catch (error) {
+      console.error("Fetch wishlist error:", error);
+      
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
+      
+      if (error.code === 'ECONNABORTED') {
+        return rejectWithValue("Request timeout. Please check your connection.");
+      }
+      
+      if (!error.response) {
+        return rejectWithValue("Network error. Please check your connection.");
+      }
+      
       return rejectWithValue(error.response?.data?.message || "Failed to fetch wishlist");
-    } finally {
-      setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
 
-// Add item to wishlist
 export const addToWishlist = createAsyncThunk(
   'wishlist/addToWishlist',
-  async (productId, { rejectWithValue, getState }) => {
-    const requestKey = `add-wishlist-${productId}`;
-    
-    if (isRequestPending(requestKey)) {
-      return rejectWithValue("Request already in progress");
-    }
-    
+  async (productId, { rejectWithValue }) => {
     try {
-      markRequestPending(requestKey);
-      
       const response = await axios.post(
         `${API_BASE_URL}/shop/wishlist/add`,
         { productId },
@@ -89,29 +86,21 @@ export const addToWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to add to wishlist");
       }
     } catch (error) {
+      console.error("Add to wishlist error:", error);
+      
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
+      
       return rejectWithValue(error.response?.data?.message || "Failed to add to wishlist");
-    } finally {
-      setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
 
-// Remove item from wishlist
 export const removeFromWishlist = createAsyncThunk(
   'wishlist/removeFromWishlist',
   async (productId, { rejectWithValue }) => {
-    const requestKey = `remove-wishlist-${productId}`;
-    
-    if (isRequestPending(requestKey)) {
-      return rejectWithValue("Request already in progress");
-    }
-    
     try {
-      markRequestPending(requestKey);
-      
       const response = await axios.delete(
         `${API_BASE_URL}/shop/wishlist/remove/${productId}`,
         { 
@@ -126,29 +115,21 @@ export const removeFromWishlist = createAsyncThunk(
         return rejectWithValue(response.data.message || "Failed to remove from wishlist");
       }
     } catch (error) {
+      console.error("Remove from wishlist error:", error);
+      
       if (error.response?.status === 429) {
         return rejectWithValue("Rate limited. Please try again in a moment.");
       }
+      
       return rejectWithValue(error.response?.data?.message || "Failed to remove from wishlist");
-    } finally {
-      setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
 
-// Move item from wishlist to cart
 export const moveToCart = createAsyncThunk(
   'wishlist/moveToCart',
   async ({ productId, quantity = 1 }, { rejectWithValue, getState, dispatch }) => {
-    const requestKey = `move-to-cart-${productId}`;
-    
-    if (isRequestPending(requestKey)) {
-      return rejectWithValue("Request already in progress");
-    }
-    
     try {
-      markRequestPending(requestKey);
-      
       const response = await axios.post(
         `${API_BASE_URL}/shop/wishlist/move-to-cart`,
         { productId, quantity },
@@ -179,31 +160,20 @@ export const moveToCart = createAsyncThunk(
         error.message || 
         "Failed to move item to cart"
       );
-    } finally {
-      setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
 
-// Move multiple items from wishlist to cart
 export const moveSelectedToCart = createAsyncThunk(
   'wishlist/moveSelectedToCart',
-  async (productIds, { rejectWithValue, getState, dispatch }) => {
-    const requestKey = `move-selected-to-cart-${productIds.sort().join('-')}`;
-    
-    if (isRequestPending(requestKey)) {
-      return rejectWithValue("Request already in progress");
-    }
-    
+  async (productIds, { rejectWithValue }) => {
     try {
-      markRequestPending(requestKey);
-      
       const response = await axios.post(
         `${API_BASE_URL}/shop/wishlist/move-selected-to-cart`,
         { productIds },
         { 
           withCredentials: true,
-          timeout: 15000 // Longer timeout for batch operations
+          timeout: 15000
         }
       );
       
@@ -230,8 +200,6 @@ export const moveSelectedToCart = createAsyncThunk(
         error.message || 
         "Failed to move items to cart"
       );
-    } finally {
-      setTimeout(() => markRequestCompleted(requestKey), 1000);
     }
   }
 );
@@ -245,6 +213,7 @@ const wishlistSlice = createSlice({
       state.wishlistCount = 0;
       state.error = null;
       state.lastUpdated = new Date().toISOString();
+      state.isFetching = false;
     },
     updateWishlistCount: (state, action) => {
       state.wishlistCount = action.payload;
@@ -269,27 +238,45 @@ const wishlistSlice = createSlice({
       );
       state.wishlistCount = Math.max(0, state.wishlistCount - 1);
       state.lastUpdated = new Date().toISOString();
+    },
+    clearWishlistError: (state) => {
+      state.error = null;
+    },
+    setWishlistItems: (state, action) => {
+      state.items = action.payload;
+      state.wishlistCount = action.payload.length;
+      state.lastUpdated = new Date().toISOString();
+    },
+    resetWishlistState: (state) => {
+      return { ...initialState };
     }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch wishlist
       .addCase(fetchWishlist.pending, (state) => {
         state.isLoading = true;
+        state.isFetching = true;
         state.error = null;
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.isFetching = false;
         state.items = action.payload.items || [];
         state.wishlistCount = action.payload.count || state.items.length;
         state.lastUpdated = new Date().toISOString();
+        state.error = null;
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.isLoading = false;
+        state.isFetching = false;
         state.error = action.payload;
+        
+        if (state.items.length === 0) {
+          state.items = [];
+          state.wishlistCount = 0;
+        }
       })
       
-      // Add to wishlist
       .addCase(addToWishlist.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -302,13 +289,13 @@ const wishlistSlice = createSlice({
           state.wishlistCount += 1;
           state.lastUpdated = new Date().toISOString();
         }
+        state.error = null;
       })
       .addCase(addToWishlist.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
       
-      // Remove from wishlist
       .addCase(removeFromWishlist.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -321,26 +308,24 @@ const wishlistSlice = createSlice({
         );
         state.wishlistCount = Math.max(0, state.wishlistCount - 1);
         state.lastUpdated = new Date().toISOString();
+        state.error = null;
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
       
-      // Move to cart (single item)
       .addCase(moveToCart.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(moveToCart.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Remove item from wishlist state
         state.items = state.items.filter(item => 
           item.product?._id !== action.payload.productId && 
           item.productId !== action.payload.productId
         );
         
-        // Update wishlist count
         if (action.payload.wishlistCount !== undefined) {
           state.wishlistCount = action.payload.wishlistCount;
         } else {
@@ -348,13 +333,13 @@ const wishlistSlice = createSlice({
         }
         
         state.lastUpdated = new Date().toISOString();
+        state.error = null;
       })
       .addCase(moveToCart.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
       
-      // Move selected to cart (multiple items)
       .addCase(moveSelectedToCart.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -362,7 +347,6 @@ const wishlistSlice = createSlice({
       .addCase(moveSelectedToCart.fulfilled, (state, action) => {
         state.isLoading = false;
         
-        // Remove moved items from wishlist state
         if (action.payload.movedItems && action.payload.movedItems.length > 0) {
           state.items = state.items.filter(item => {
             const productId = item.product?._id || item.productId;
@@ -370,7 +354,6 @@ const wishlistSlice = createSlice({
           });
         }
         
-        // Update wishlist count
         if (action.payload.wishlistCount !== undefined) {
           state.wishlistCount = action.payload.wishlistCount;
         } else if (action.payload.movedItems) {
@@ -378,19 +361,15 @@ const wishlistSlice = createSlice({
         }
         
         state.lastUpdated = new Date().toISOString();
+        state.error = null;
       })
       .addCase(moveSelectedToCart.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
       
-      /* CLEAR ON LOGOUT - Listen for clearAllUserData action */
       .addCase('clear/clearAllUserData', (state) => {
-        state.items = [];
-        state.wishlistCount = 0;
-        state.isLoading = false;
-        state.error = null;
-        state.lastUpdated = new Date().toISOString();
+        return { ...initialState };
       });
   }
 });
@@ -399,7 +378,10 @@ export const {
   clearWishlist, 
   updateWishlistCount, 
   addOptimistic, 
-  removeOptimistic 
+  removeOptimistic,
+  clearWishlistError,
+  setWishlistItems,
+  resetWishlistState
 } = wishlistSlice.actions;
 
 export default wishlistSlice.reducer;

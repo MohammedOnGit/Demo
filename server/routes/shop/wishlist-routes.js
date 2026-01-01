@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Wishlist = require("../../models/WishList");
 const Product = require("../../models/Product");
-const Cart = require("../../models/Cart"); // IMPORTANT: Add this import
+const Cart = require("../../models/Cart"); 
 // Import from your existing auth controller
 const { authMiddleware } = require("../../controllers/auth/auth-controller");
 
@@ -170,132 +170,6 @@ router.delete("/remove/:productId", authMiddleware, async (req, res) => {
     });
   }
 });
-
-// @route   POST /api/shop/wishlist/move-to-cart
-// @desc    Move item from wishlist to cart
-// @access  Private
-// router.post("/move-to-cart", authMiddleware, async (req, res) => {
-//   try {
-//     const { productId, quantity = 1 } = req.body;
-
-//     if (!productId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Product ID is required"
-//       });
-//     }
-
-//     // 1. Check if product exists
-//     const product = await Product.findById(productId);
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found"
-//       });
-//     }
-
-//     // 2. Check stock availability
-//     if (product.totalStock < quantity) {
-//       return res.status(400).json({
-//         success: false,
-//         message: `Only ${product.totalStock} items available in stock`
-//       });
-//     }
-
-//     // 3. Check if product is in wishlist
-//     const wishlist = await Wishlist.findOne({ user: req.user.id });
-//     if (!wishlist) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Wishlist not found"
-//       });
-//     }
-
-//     const wishlistItemIndex = wishlist.items.findIndex(
-//       item => item.product.toString() === productId
-//     );
-
-//     if (wishlistItemIndex === -1) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found in wishlist"
-//       });
-//     }
-
-//     // 4. Add to cart
-//     let cart = await Cart.findOne({ userId: req.user.id });
-    
-//     if (!cart) {
-//       cart = new Cart({
-//         userId: req.user.id,
-//         items: []
-//       });
-//     }
-
-//     const cartItemIndex = cart.items.findIndex(
-//       item => item.productId && item.productId.toString() === productId
-//     );
-
-//     if (cartItemIndex > -1) {
-//       // Update quantity if already in cart
-//       cart.items[cartItemIndex].quantity += parseInt(quantity);
-//     } else {
-//       // Add new item to cart
-//       cart.items.push({
-//         productId,
-//         quantity: parseInt(quantity)
-//       });
-//     }
-
-//     // 5. Remove from wishlist
-//     wishlist.items.splice(wishlistItemIndex, 1);
-
-//     // 6. Save both
-//     await Promise.all([
-//       cart.save(),
-//       wishlist.save()
-//     ]);
-
-//     // 7. Populate cart items for response
-//     await cart.populate({
-//       path: "items.productId",
-//       select: "title price salePrice image"
-//     });
-
-//     // Map cart items for consistent response
-//     const mapCartItems = (items = []) =>
-//       items.map((item) => {
-//         const p = item.productId || {};
-//         const image = p.image || (Array.isArray(p.images) ? p.images[0] : null);
-
-//         return {
-//           productId: p._id || null,
-//           image,
-//           title: p.title || "Product not found",
-//           price: p.price ?? null,
-//           salePrice: p.salePrice ?? null,
-//           quantity: item.quantity,
-//         };
-//       });
-
-//     res.json({
-//       success: true,
-//       message: "Item moved to cart successfully",
-//       data: {
-//         productId,
-//         cartItems: mapCartItems(cart.items),
-//         wishlistCount: wishlist.items.length
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error("Move to cart error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error moving item to cart"
-//     });
-//   }
-// });
 
 // @route   POST /api/shop/wishlist/move-selected-to-cart
 // @desc    Move multiple items from wishlist to cart
@@ -514,5 +388,7 @@ router.delete("/clear", authMiddleware, async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;
