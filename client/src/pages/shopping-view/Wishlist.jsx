@@ -47,7 +47,8 @@ import { toast } from "sonner";
 import {
   fetchWishlist,
   removeFromWishlist,
-  moveToCart
+  moveToCart,
+  moveSelectedToCart  // ADD THIS IMPORT
 } from "@/store/shop/wishlist-slice";
 
 const Wishlist = () => {
@@ -100,23 +101,42 @@ const Wishlist = () => {
       setSelectedItems(prev => prev.filter(id => id !== productId));
     } catch (error) {
       console.error("Move to cart error:", error);
-      toast.error("Failed to move item to cart");
+      toast.error(error || "Failed to move item to cart");
     }
   };
-
+  
+  // UPDATED: Use the batch move action
   const handleMoveSelectedToCart = async () => {
     if (selectedItems.length === 0) return;
     
     try {
-      const promises = selectedItems.map(productId => 
-        dispatch(moveToCart({ productId, quantity: 1 })).unwrap()
-      );
-      await Promise.all(promises);
-      toast.success(`${selectedItems.length} items moved to cart!`);
+      // Use the batch move action instead of multiple individual calls
+      const result = await dispatch(moveSelectedToCart(selectedItems)).unwrap();
+      
+      // Show appropriate message based on result
+      if (result.failedItems && result.failedItems.length > 0) {
+        const successCount = result.movedItems?.length || 0;
+        const failCount = result.failedItems.length;
+        
+        toast.warning(
+          `Moved ${successCount} items. ${failCount} failed.`,
+          {
+            description: result.failedItems.map(item => 
+              `Product ${item.productId}: ${item.reason}`
+            ).join(', ')
+          }
+        );
+      } else {
+        const movedCount = result.movedItems?.length || selectedItems.length;
+        toast.success(`${movedCount} items moved to cart!`);
+      }
+      
+      // Clear selected items
       setSelectedItems([]);
+      
     } catch (error) {
       console.error("Move selected to cart error:", error);
-      toast.error("Failed to move items to cart");
+      toast.error(error || "Failed to move items to cart");
     }
   };
 
@@ -144,11 +164,26 @@ const Wishlist = () => {
     if (selectedItems.length === 0) return;
     
     try {
-      const promises = selectedItems.map(productId => 
-        dispatch(removeFromWishlist(productId)).unwrap()
-      );
-      await Promise.all(promises);
-      toast.success(`${selectedItems.length} items removed from wishlist`);
+      // Process removals sequentially to avoid state issues
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const productId of selectedItems) {
+        try {
+          await dispatch(removeFromWishlist(productId)).unwrap();
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to remove product ${productId}:`, error);
+          failedCount++;
+        }
+      }
+      
+      if (failedCount > 0) {
+        toast.warning(`Removed ${successCount} items. ${failedCount} failed.`);
+      } else {
+        toast.success(`${successCount} items removed from wishlist`);
+      }
+      
       setSelectedItems([]);
     } catch (error) {
       console.error("Remove selected error:", error);

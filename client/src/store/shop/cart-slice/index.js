@@ -29,6 +29,28 @@ export const addToCart = createAsyncThunk(
   }
 );
 
+// Add this action to update cart after moving from wishlist
+export const updateCartAfterWishlistMove = createAsyncThunk(
+  'cart/updateAfterWishlistMove',
+  async (cartItems, { rejectWithValue }) => {
+    try {
+      // Fetch fresh cart data from server
+      const response = await axios.get(
+        `${API_BASE_URL}/shop/cart/get/${getState().auth.user.id}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        return response.data.data.items || [];
+      }
+      return rejectWithValue("Failed to fetch updated cart");
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
 /* ------------------ FETCH CART ITEMS ------------------ */
 export const fetchCartItems = createAsyncThunk(
   "cart/fetchCartItems",
