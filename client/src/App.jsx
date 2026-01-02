@@ -1,25 +1,174 @@
+// import React, { useEffect, lazy, Suspense } from 'react';
+// import { Routes, Route, Navigate } from "react-router-dom";
+// import "./App.css";
+// import { Skeleton } from "@/components/ui/skeleton";
+
+// // Import utilities for rate limiting
+// import { requestManager } from "@/utils/request-manager";
+// import "@/utils/axios-interceptor";
+
+// // Auth components - keep as lazy loaded for performance
+// const AuthLayout = lazy(() => import("./components/auth/layout"));
+// const AuthLogin = lazy(() => import("./pages/auth/login"));
+// const AuthRegister = lazy(() => import("./pages/auth/register"));
+
+// // Admin components - keep as lazy loaded
+// const AdminLayout = lazy(() => import("./components/admin-view/layout"));
+// const AdminDashBoard = lazy(() => import("./pages/admin-view/dashboard"));
+// const AdminOrders = lazy(() => import("./pages/admin-view/orders"));
+// const AdminFeatures = lazy(() => import("./pages/admin-view/features"));
+// const AdminProducts = lazy(() => import("./pages/admin-view/products"));
+
+// // Shopping components - keep as lazy loaded
+// const ShoppingLayout = lazy(() => import("./components/shoping-view/layout"));
+// const ShoppingHome = lazy(() => import("./pages/shopping-view/home"));
+// const ShopListing = lazy(() => import("./pages/shopping-view/listing"));
+// const ShoppingAccount = lazy(() => import("./pages/shopping-view/account"));
+// const ShoppingCheckout = lazy(() => import("./pages/shopping-view/checkout"));
+// const SearchPage = lazy(() => import("./pages/shopping-view/search-page"));
+// const Wishlist = lazy(() => import("./pages/shopping-view/Wishlist"));
+
+// // Error pages
+// const NotFound = lazy(() => import("./pages/not-found"));
+// const CheckAuth = lazy(() => import("./components/common/check-auth"));
+// const UnAuthPage = lazy(() => import("./pages/unauth-page"));
+
+// // Redux
+// import { useSelector, useDispatch } from "react-redux";
+// import { checkAuth } from "./store/auth-slice";
+
+// // Loading fallback component
+// const LoadingFallback = () => (
+//   <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+//     <div className="space-y-4">
+//       <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+//       <div className="space-y-2">
+//         <Skeleton className="h-4 w-[250px]" />
+//         <Skeleton className="h-4 w-[200px]" />
+//       </div>
+//     </div>
+//   </div>
+// );
+
+// function App() {
+//   const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
+//   const dispatch = useDispatch();
+
+//   useEffect(() => {
+//     // Initialize cache management for rate limiting
+//     const clearOldCache = () => {
+//       requestManager.clearCache();
+//     };
+    
+//     // Clear cache every 30 minutes to prevent memory issues
+//     const cacheInterval = setInterval(clearOldCache, 1800000);
+    
+//     // Check auth on mount
+//     dispatch(checkAuth());
+    
+//     return () => {
+//       clearInterval(cacheInterval);
+//       requestManager.clearCache(); // Clear cache on unmount
+//     };
+//   }, [dispatch]);
+
+//   if (isLoading) {
+//     return <LoadingFallback />;
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-background">
+//       <Suspense fallback={<LoadingFallback />}>
+//         <Routes>
+//           {/* ===================== AUTH ROUTES ===================== */}
+//           <Route
+//             path="/auth"
+//             element={
+//               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+//                 <AuthLayout />
+//               </CheckAuth>
+//             }
+//           >
+//             <Route index element={<Navigate to="login" />} />
+//             <Route path="login" element={<AuthLogin />} />
+//             <Route path="register" element={<AuthRegister />} />
+//           </Route>
+
+//           {/* ===================== ADMIN ROUTES ===================== */}
+//           <Route
+//             path="/admin"
+//             element={
+//               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+//                 <AdminLayout />
+//               </CheckAuth>
+//             }
+//           >
+//             <Route index element={<Navigate to="dashboard" />} />
+//             <Route path="dashboard" element={<AdminDashBoard />} />
+//             <Route path="features" element={<AdminFeatures />} />
+//             <Route path="orders" element={<AdminOrders />} />
+//             <Route path="products" element={<AdminProducts />} />
+//           </Route>
+
+//           {/* ===================== SHOPPING ROUTES ===================== */}
+//           <Route
+//             path="/shop"
+//             element={
+//               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
+//                 <ShoppingLayout />
+//               </CheckAuth>
+//             }
+//           >
+//             <Route index element={<Navigate to="home" />} />
+//             <Route path="home" element={<ShoppingHome />} />
+//             <Route path="listing" element={<ShopListing />} />
+//             <Route path="checkout" element={<ShoppingCheckout />} />
+//             <Route path="account" element={<ShoppingAccount />} />
+//             <Route path="search" element={<SearchPage />} />
+//             <Route path="wishlist" element={<Wishlist />} />
+//           </Route>
+
+//           {/* ===================== REDIRECTS FOR OLD LOGIN PATHS ===================== */}
+//           <Route path="/shop/login" element={<Navigate to="/auth/login" replace />} />
+//           <Route path="/shop/register" element={<Navigate to="/auth/register" replace />} />
+
+//           {/* ===================== UNAUTHORIZED & 404 ===================== */}
+//           <Route path="/unauth-page" element={<UnAuthPage />} />
+//           <Route path="*" element={<NotFound />} />
+//         </Routes>
+//       </Suspense>
+//     </div>
+//   );
+// }
+
+// export default App;
+
+
+// App.jsx - CORRECTED FILE
 import React, { useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import "./App.css";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button"; // ADD THIS IMPORT
+import { XCircle } from "lucide-react"; // ADD THIS IMPORT
 
 // Import utilities for rate limiting
 import { requestManager } from "@/utils/request-manager";
 import "@/utils/axios-interceptor";
 
-// Auth components - keep as lazy loaded for performance
+// Auth components
 const AuthLayout = lazy(() => import("./components/auth/layout"));
 const AuthLogin = lazy(() => import("./pages/auth/login"));
 const AuthRegister = lazy(() => import("./pages/auth/register"));
 
-// Admin components - keep as lazy loaded
+// Admin components
 const AdminLayout = lazy(() => import("./components/admin-view/layout"));
 const AdminDashBoard = lazy(() => import("./pages/admin-view/dashboard"));
 const AdminOrders = lazy(() => import("./pages/admin-view/orders"));
 const AdminFeatures = lazy(() => import("./pages/admin-view/features"));
 const AdminProducts = lazy(() => import("./pages/admin-view/products"));
 
-// Shopping components - keep as lazy loaded
+// Shopping components
 const ShoppingLayout = lazy(() => import("./components/shoping-view/layout"));
 const ShoppingHome = lazy(() => import("./pages/shopping-view/home"));
 const ShopListing = lazy(() => import("./pages/shopping-view/listing"));
@@ -28,7 +177,8 @@ const ShoppingCheckout = lazy(() => import("./pages/shopping-view/checkout"));
 const SearchPage = lazy(() => import("./pages/shopping-view/search-page"));
 const Wishlist = lazy(() => import("./pages/shopping-view/Wishlist"));
 
-// Error pages
+// PayPal and Error pages
+const PayPalReturn = lazy(() => import("./pages/shopping-view/paypal-return")); // CORRECTED PATH
 const NotFound = lazy(() => import("./pages/not-found"));
 const CheckAuth = lazy(() => import("./components/common/check-auth"));
 const UnAuthPage = lazy(() => import("./pages/unauth-page"));
@@ -50,25 +200,41 @@ const LoadingFallback = () => (
   </div>
 );
 
+// PayPal Cancel Component
+const PayPalCancel = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center p-8">
+        <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Payment Cancelled</h1>
+        <p className="text-gray-600 mb-6">Your payment was cancelled. No charges were made.</p>
+        <div className="space-y-3">
+          <Button onClick={() => navigate("/shop/checkout")}>Return to Checkout</Button>
+          <Button variant="outline" onClick={() => navigate("/shop")}>Continue Shopping</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Initialize cache management for rate limiting
     const clearOldCache = () => {
       requestManager.clearCache();
     };
     
-    // Clear cache every 30 minutes to prevent memory issues
     const cacheInterval = setInterval(clearOldCache, 1800000);
     
-    // Check auth on mount
     dispatch(checkAuth());
     
     return () => {
       clearInterval(cacheInterval);
-      requestManager.clearCache(); // Clear cache on unmount
+      requestManager.clearCache();
     };
   }, [dispatch]);
 
@@ -127,6 +293,10 @@ function App() {
             <Route path="search" element={<SearchPage />} />
             <Route path="wishlist" element={<Wishlist />} />
           </Route>
+
+          {/* ===================== PAYPAL ROUTES ===================== */}
+          <Route path="/shop/paypal-return" element={<PayPalReturn />} />
+          <Route path="/shop/paypal-cancel" element={<PayPalCancel />} />
 
           {/* ===================== REDIRECTS FOR OLD LOGIN PATHS ===================== */}
           <Route path="/shop/login" element={<Navigate to="/auth/login" replace />} />
