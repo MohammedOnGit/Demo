@@ -27,7 +27,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/sheet"; // Added SheetTitle import
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import { shopingViewHeaderMenuItems } from "@/config";
@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { logoutUser } from "@/store/auth-slice";
-import { fetchCartItems  } from "@/store/shop/cart-slice"; // FIXED: Changed from fetchCartItems to fetchCart
+import { fetchCartItems } from "@/store/shop/cart-slice";
 import { fetchWishlist } from "@/store/shop/wishlist-slice";
 import UserCartWrapper from "./cart-wrapper";
 import { cn } from "@/lib/utils";
@@ -541,7 +541,7 @@ function CartIndicator({ isMobile = false, onClick }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { items = [], cartCount = 0, subtotal = 0 } = useSelector((state) => state.shopCart || {}); // FIXED: Access shopCart
+  const { items = [], cartCount = 0, subtotal = 0 } = useSelector((state) => state.shopCart || {});
   const [openCartSheet, setOpenCartSheet] = useState(false);
   const lastFetchRef = useRef(0);
   const fetchCooldown = 10000; // 10 seconds between fetches
@@ -557,9 +557,9 @@ function CartIndicator({ isMobile = false, onClick }) {
     
     lastFetchRef.current = now;
     
-    // Throttled cart fetch - FIXED: Using fetchCart not fetchCartItems
+    // Throttled cart fetch
     const fetchCartThrottled = debounce(() => {
-      dispatch(fetchCartItems (user.id));
+      dispatch(fetchCartItems(user.id));
     }, 1000);
     
     fetchCartThrottled();
@@ -577,8 +577,8 @@ function CartIndicator({ isMobile = false, onClick }) {
   }, [user, dispatch]);
 
   const handleMobileClick = () => {
-    if (onClick) onClick(); // Close mobile menu if provided
-    setOpenCartSheet(true); // Open cart sheet
+    if (onClick) onClick();
+    setOpenCartSheet(true);
   };
 
   if (isMobile) {
@@ -599,11 +599,12 @@ function CartIndicator({ isMobile = false, onClick }) {
           )}
         </Button>
         
-        {/* Mobile Cart Sheet */}
+        {/* Mobile Cart Sheet - FIXED: Added SheetTitle */}
         <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
+            <SheetTitle className="sr-only">Shopping Cart</SheetTitle>
             <UserCartWrapper 
-              cartItems={items} // FIXED: Using items instead of cartItems
+              cartItems={items}
               setOpenCartSheet={setOpenCartSheet}
             />
           </SheetContent>
@@ -634,9 +635,12 @@ function CartIndicator({ isMobile = false, onClick }) {
             )}
           </Button>
         </SheetTrigger>
+        
+        {/* Desktop Cart Sheet - FIXED: Added SheetTitle */}
         <SheetContent side="right" className="w-full sm:max-w-md p-0">
+          <SheetTitle className="sr-only">Shopping Cart</SheetTitle>
           <UserCartWrapper 
-            cartItems={items} // FIXED: Using items instead of cartItems
+            cartItems={items}
             setOpenCartSheet={setOpenCartSheet}
           />
         </SheetContent>
@@ -672,7 +676,6 @@ function UserMenu() {
       })
       .catch((error) => {
         console.error("Logout failed:", error);
-        // Still navigate home even if logout failed
         navigate("/shop/home");
       });
   }, [dispatch, navigate]);
@@ -924,7 +927,10 @@ function ShoppingHeader() {
                 </Button>
               </SheetTrigger>
               
+              {/* Main Mobile Menu Sheet - FIXED: Added SheetTitle */}
               <SheetContent side="left" className="w-full sm:max-w-sm p-0 overflow-y-auto">
+                <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
+                
                 <div className="sticky top-0 z-10 bg-background border-b px-4 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
