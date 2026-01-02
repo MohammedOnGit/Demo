@@ -1,180 +1,412 @@
-// // controllers/orderController.js
+// // // controllers/shop/order-controller.js - PRODUCTION READY VERSION
+// // const Order = require('../../models/Order');
+// // const paystack = require('../../helpers/paystack');
+
+// // const createOrder = async (req, res) => {
+// //   try {
+// //     console.log('🛒 Creating order for user:', req.body.userId);
+    
+// //     const { userId, cartItems, addressInfo, totalAmount, customerEmail } = req.body;
+
+// //     // 1. Validate input
+// //     if (!userId || !cartItems || !totalAmount || cartItems.length === 0 || !customerEmail) {
+// //       return res.status(400).json({
+// //         success: false,
+// //         message: "Missing required fields: userId, cartItems, totalAmount, or customerEmail"
+// //       });
+// //     }
+
+// //     // 2. Create order in database
+// //     const newOrder = new Order({
+// //       userId,
+// //       cartItems: cartItems.map(item => ({
+// //         productId: item.productId,
+// //         title: item.title,
+// //         image: item.image || '',
+// //         price: Number(item.price),
+// //         salePrice: item.salePrice ? Number(item.salePrice) : undefined,
+// //         quantity: Number(item.quantity)
+// //       })),
+// //       addressInfo: addressInfo || {},
+// //       orderStatus: 'pending',
+// //       paymentMethod: 'paystack',
+// //       paymentStatus: 'pending',
+// //       totalAmount: Number(totalAmount),
+// //       orderDate: new Date(),
+// //       orderUpdateDate: new Date()
+// //     });
+
+// //     const savedOrder = await newOrder.save();
+// //     console.log('✅ Order saved:', savedOrder._id);
+
+// //     // 3. Prepare Paystack payment data
+// //     const amountInKobo = Math.round(savedOrder.totalAmount * 100); // Convert to kobo
+// //     const transactionReference = `ORDER_${savedOrder._id}_${Date.now()}`;
+    
+// //     // IMPORTANT: Use BACKEND callback URL for verification
+// //     const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
+// //     const frontendBaseUrl = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+
+// //     const paystackData = {
+// //       email: customerEmail,
+// //       amount: amountInKobo,
+// //       reference: transactionReference,
+// //       callback_url: `${backendBaseUrl}/api/shop/orders/verify-payment`, // Backend verification endpoint
+// //       metadata: {
+// //         orderId: savedOrder._id.toString(),
+// //         userId: userId,
+// //         cartCount: cartItems.length
+// //       }
+// //     };
+
+// //     // 4. Initialize Paystack transaction
+// //     const paystackResponse = await paystack.initializeTransaction(paystackData);
+
+// //     if (!paystackResponse.status) {
+// //       console.error('❌ Paystack initialization failed:', paystackResponse.message);
+      
+// //       // Update order status to failed
+// //       savedOrder.paymentStatus = 'failed';
+// //       savedOrder.orderUpdateDate = new Date();
+// //       await savedOrder.save();
+
+// //       return res.status(500).json({
+// //         success: false,
+// //         message: 'Failed to initialize payment gateway',
+// //         error: paystackResponse.message
+// //       });
+// //     }
+
+// //     // 5. Save the Paystack reference to your order
+// //     savedOrder.paymentId = transactionReference;
+// //     savedOrder.orderUpdateDate = new Date();
+// //     await savedOrder.save();
+
+// //     console.log('🔗 Paystack payment link generated for order:', savedOrder._id);
+
+// //     // 6. Send the payment link to frontend
+// //     res.status(201).json({
+// //       success: true,
+// //       message: 'Order created. Redirect to payment.',
+// //       orderId: savedOrder._id,
+// //       authorization_url: paystackResponse.data.authorization_url
+// //     });
+
+// //   } catch (error) {
+// //     console.error('❌ Create Order Error:', error);
+    
+// //     // Handle specific errors
+// //     if (error.name === 'ValidationError') {
+// //       return res.status(400).json({
+// //         success: false,
+// //         message: 'Validation error',
+// //         errors: Object.values(error.errors).map(err => err.message)
+// //       });
+// //     }
+
+// //     res.status(500).json({
+// //       success: false,
+// //       message: 'Internal server error creating order'
+// //     });
+// //   }
+// // };
+
+// // const verifyPayment = async (req, res) => {
+// //   try {
+// //     const { reference } = req.query;
+    
+// //     console.log('🔍 Verifying payment for reference:', reference);
+    
+// //     if (!reference) {
+// //       console.warn('No reference provided in callback');
+// //       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=no_reference`);
+// //     }
+
+// //     // 1. Verify with Paystack API
+// //     const verification = await paystack.verifyTransaction(reference);
+    
+// //     if (!verification.status || verification.data.status !== 'success') {
+// //       console.error('Paystack verification failed:', verification.message);
+// //       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=verification_failed`);
+// //     }
+
+// //     // 2. Find the associated order
+// //     const order = await Order.findOne({ paymentId: reference });
+// //     if (!order) {
+// //       console.error('Order not found for reference:', reference);
+// //       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=order_not_found`);
+// //     }
+
+// //     // 3. CRITICAL: Verify the amount paid matches your order total
+// //     const amountPaid = verification.data.amount / 100; // Convert from kobo
+// //     if (amountPaid !== order.totalAmount) {
+// //       console.error(`Amount mismatch for order ${order._id}. Paid: ${amountPaid}, Expected: ${order.totalAmount}`);
+// //       order.paymentStatus = 'amount_mismatch';
+// //       await order.save();
+// //       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=amount_mismatch`);
+// //     }
+
+// //     // 4. Check if webhook already processed this order (idempotency)
+// //     if (order.paymentStatus === 'completed') {
+// //       console.log(`ℹ️ Order ${order._id} already completed via webhook. Redirecting user.`);
+// //       return res.redirect(`${process.env.FRONTEND_BASE_URL}/order-confirmation/${order._id}`);
+// //     }
+
+// //     // 5. Update order status
+// //     order.paymentStatus = 'completed';
+// //     order.orderStatus = 'confirmed';
+// //     order.payerId = verification.data.customer.email;
+// //     order.orderUpdateDate = new Date();
+// //     order.transactionDetails = {
+// //       gateway: 'paystack',
+// //       chargeId: verification.data.id,
+// //       channel: verification.data.channel,
+// //       ipAddress: verification.data.ip_address,
+// //       paidAt: verification.data.paid_at
+// //     };
+    
+// //     await order.save();
+// //     console.log(`✅ Order ${order._id} confirmed via callback verification.`);
+
+// //     // 6. IMPORTANT: Don't trigger fulfillment actions here (emails, inventory)
+// //     // Let the webhook handle that to avoid duplicates
+    
+// //     // 7. Redirect to success page
+// //     res.redirect(`${process.env.FRONTEND_BASE_URL}/order-confirmation/${order._id}`);
+
+// //   } catch (error) {
+// //     console.error('❌ Verify Payment Error:', error);
+// //     res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=server_error`);
+// //   }
+// // };
+
+// // const getOrderDetails = async (req, res) => {
+// //   try {
+// //     const { orderId } = req.params;
+// //     console.log('📋 Fetching order details:', orderId);
+    
+// //     const order = await Order.findById(orderId);
+    
+// //     if (!order) {
+// //       return res.status(404).json({
+// //         success: false,
+// //         message: 'Order not found'
+// //       });
+// //     }
+
+// //     res.status(200).json({
+// //       success: true,
+// //       order: {
+// //         id: order._id,
+// //         userId: order.userId,
+// //         cartItems: order.cartItems,
+// //         addressInfo: order.addressInfo,
+// //         orderStatus: order.orderStatus,
+// //         paymentMethod: order.paymentMethod,
+// //         paymentStatus: order.paymentStatus,
+// //         totalAmount: order.totalAmount,
+// //         orderDate: order.orderDate,
+// //         paymentId: order.paymentId,
+// //         transactionDetails: order.transactionDetails
+// //       }
+// //     });
+// //   } catch (error) {
+// //     console.error('❌ Get Order Error:', error);
+// //     res.status(500).json({
+// //       success: false,
+// //       message: 'Failed to get order details'
+// //     });
+// //   }
+// // };
+
+// // module.exports = { 
+// //   createOrder, 
+// //   verifyPayment,
+// //   getOrderDetails 
+// // };
+
+
 // const Order = require('../../models/Order');
-// const paypalHelper = require('../../helpers/paypal');
+// const Cart = require('../../models/Cart');
+// const paystack = require('../../helpers/paystack');
 
 // const createOrder = async (req, res) => {
 //   try {
-//     const {
-//       userId,
-//       cartItems,
-//       addressInfo,
-//       paymentMethod = 'paypal',
-//       totalAmount
-//     } = req.body;
+//     console.log('🛒 Creating order for user:', req.body.userId);
+    
+//     const { userId, cartItems, addressInfo, totalAmount, customerEmail } = req.body;
 
-//     // Validate required fields
-//     if (!userId || !cartItems || !totalAmount || cartItems.length === 0) {
+//     if (!userId || !cartItems || !totalAmount || cartItems.length === 0 || !customerEmail) {
 //       return res.status(400).json({
 //         success: false,
-//         message: "Missing required fields"
+//         message: "Missing required fields: userId, cartItems, totalAmount, or customerEmail"
 //       });
 //     }
 
-//     // Create order in database
 //     const newOrder = new Order({
 //       userId,
-//       cartItems,
+//       cartItems: cartItems.map(item => ({
+//         productId: item.productId,
+//         title: item.title,
+//         image: item.image || '',
+//         price: Number(item.price),
+//         salePrice: item.salePrice ? Number(item.salePrice) : undefined,
+//         quantity: Number(item.quantity)
+//       })),
 //       addressInfo: addressInfo || {},
 //       orderStatus: 'pending',
-//       paymentMethod,
+//       paymentMethod: 'paystack',
 //       paymentStatus: 'pending',
-//       totalAmount,
-//       orderDate: new Date()
+//       totalAmount: Number(totalAmount),
+//       orderDate: new Date(),
+//       orderUpdateDate: new Date()
 //     });
 
 //     const savedOrder = await newOrder.save();
+//     console.log('✅ Order saved:', savedOrder._id);
 
-//     // Generate PayPal return URLs
-//     const { returnUrl, cancelUrl } = paypalHelper.generateReturnUrls(savedOrder._id);
+//     const amountInKobo = Math.round(savedOrder.totalAmount * 100);
+//     const transactionReference = `ORDER_${savedOrder._id}_${Date.now()}`;
+    
+//     const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
 
-//     // Create PayPal order
-//     const paypalResult = await paypalHelper.createOrder({
-//       orderId: savedOrder._id,
-//       totalAmount: savedOrder.totalAmount,
-//       cartItems: savedOrder.cartItems,
-//       addressInfo: savedOrder.addressInfo,
-//       returnUrl,
-//       cancelUrl
-//     });
+//     const paystackData = {
+//       email: customerEmail,
+//       amount: amountInKobo,
+//       reference: transactionReference,
+//       callback_url: `${backendBaseUrl}/api/shop/orders/verify-payment`,
+//       metadata: {
+//         orderId: savedOrder._id.toString(),
+//         userId: userId,
+//         cartCount: cartItems.length
+//       }
+//     };
 
-//     if (!paypalResult.success) {
+//     const paystackResponse = await paystack.initializeTransaction(paystackData);
+
+//     if (!paystackResponse.status) {
+//       console.error('❌ Paystack initialization failed:', paystackResponse.message);
+      
 //       savedOrder.paymentStatus = 'failed';
 //       savedOrder.orderUpdateDate = new Date();
 //       await savedOrder.save();
 
 //       return res.status(500).json({
 //         success: false,
-//         message: 'Failed to create PayPal order',
-//         error: paypalResult.error
+//         message: 'Failed to initialize payment gateway',
+//         error: paystackResponse.message
 //       });
 //     }
 
-//     // Update order with PayPal ID
-//     savedOrder.paymentId = paypalResult.paypalOrderId;
+//     savedOrder.paymentId = transactionReference;
 //     savedOrder.orderUpdateDate = new Date();
 //     await savedOrder.save();
 
+//     console.log('🔗 Paystack payment link generated for order:', savedOrder._id);
+
 //     res.status(201).json({
 //       success: true,
-//       message: 'Order created successfully',
+//       message: 'Order created. Redirect to payment.',
 //       orderId: savedOrder._id,
-//       paypalOrderId: paypalResult.paypalOrderId,
-//       approvalUrl: paypalResult.approvalUrl
+//       authorization_url: paystackResponse.data.authorization_url
 //     });
 
 //   } catch (error) {
-//     console.error('Create Order Error:', error);
+//     console.error('❌ Create Order Error:', error);
+    
+//     if (error.name === 'ValidationError') {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Validation error',
+//         errors: Object.values(error.errors).map(err => err.message)
+//       });
+//     }
+
 //     res.status(500).json({
 //       success: false,
-//       message: 'Internal server error'
+//       message: 'Internal server error creating order'
 //     });
 //   }
 // };
 
-// const capturePayment = async (req, res) => {
+// const verifyPayment = async (req, res) => {
 //   try {
-//     const { orderId } = req.body;
+//     const { reference } = req.query;
     
-//     if (!orderId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Order ID is required'
-//       });
+//     console.log('🔍 Verifying payment for reference:', reference);
+    
+//     if (!reference) {
+//       console.warn('No reference provided in callback');
+//       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=no_reference`);
 //     }
 
-//     const order = await Order.findById(orderId);
+//     const verification = await paystack.verifyTransaction(reference);
     
+//     if (!verification.status || verification.data.status !== 'success') {
+//       console.error('Paystack verification failed:', verification.message);
+//       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=verification_failed`);
+//     }
+
+//     const order = await Order.findOne({ paymentId: reference });
 //     if (!order) {
-//       return res.status(404).json({
-//         success: false,
-//         message: 'Order not found'
-//       });
+//       console.error('Order not found for reference:', reference);
+//       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=order_not_found`);
+//     }
+
+//     const amountPaid = verification.data.amount / 100;
+//     if (amountPaid !== order.totalAmount) {
+//       console.error(`Amount mismatch for order ${order._id}. Paid: ${amountPaid}, Expected: ${order.totalAmount}`);
+//       order.paymentStatus = 'amount_mismatch';
+//       await order.save();
+//       return res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=amount_mismatch`);
 //     }
 
 //     if (order.paymentStatus === 'completed') {
-//       return res.status(200).json({
-//         success: true,
-//         message: 'Payment already captured',
-//         order: order
-//       });
+//       console.log(`ℹ️ Order ${order._id} already completed via webhook. Redirecting user.`);
+//       return res.redirect(`${process.env.FRONTEND_BASE_URL}/order-confirmation/${order._id}`);
 //     }
 
-//     if (!order.paymentId) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'No PayPal order associated'
-//       });
-//     }
-
-//     // Capture payment
-//     const captureResult = await paypalHelper.capturePayment(order.paymentId);
-
-//     if (!captureResult.success) {
-//       if (captureResult.statusCode === 422) {
-//         order.paymentStatus = 'failed';
-//         order.orderStatus = 'cancelled';
-//         order.orderUpdateDate = new Date();
-//         await order.save();
-
-//         return res.status(422).json({
-//           success: false,
-//           message: 'Payment already captured or order expired'
-//         });
-//       }
-
-//       return res.status(500).json({
-//         success: false,
-//         message: 'Payment capture failed',
-//         error: captureResult.error
-//       });
-//     }
-
-//     // Update order with successful payment
 //     order.paymentStatus = 'completed';
 //     order.orderStatus = 'confirmed';
-//     order.payerId = captureResult.payer?.payer_id || captureResult.payer?.email_address;
+//     order.payerId = verification.data.customer.email;
 //     order.orderUpdateDate = new Date();
 //     order.transactionDetails = {
-//       captureId: captureResult.captureId,
-//       status: captureResult.status,
-//       capturedAt: new Date()
+//       gateway: 'paystack',
+//       chargeId: verification.data.id,
+//       channel: verification.data.channel,
+//       ipAddress: verification.data.ip_address,
+//       paidAt: verification.data.paid_at
 //     };
-
+    
 //     await order.save();
+//     console.log(`✅ Order ${order._id} confirmed via callback verification.`);
 
-//     res.status(200).json({
-//       success: true,
-//       message: 'Payment captured successfully',
-//       order: {
-//         id: order._id,
-//         status: order.orderStatus,
-//         paymentStatus: order.paymentStatus,
-//         totalAmount: order.totalAmount
+//     try {
+//       const cart = await Cart.findOne({ userId: order.userId });
+//       if (cart) {
+//         cart.items = [];
+//         cart.lastUpdated = new Date();
+//         await cart.save();
+//         console.log(`🛒 Cart cleared for user: ${order.userId}`);
+//       } else {
+//         console.log(`ℹ️ No cart found for user: ${order.userId}`);
 //       }
-//     });
+//     } catch (cartError) {
+//       console.error(`❌ Error clearing cart for user ${order.userId}:`, cartError);
+//     }
+
+//     res.redirect(`${process.env.FRONTEND_BASE_URL}/order-confirmation/${order._id}`);
 
 //   } catch (error) {
-//     console.error('Capture Payment Error:', error);
-//     res.status(500).json({
-//       success: false,
-//       message: 'Failed to capture payment'
-//     });
+//     console.error('❌ Verify Payment Error:', error);
+//     res.redirect(`${process.env.FRONTEND_BASE_URL}/payment-failed?error=server_error`);
 //   }
 // };
 
 // const getOrderDetails = async (req, res) => {
 //   try {
 //     const { orderId } = req.params;
+//     console.log('📋 Fetching order details:', orderId);
     
 //     const order = await Order.findById(orderId);
     
@@ -187,10 +419,22 @@
 
 //     res.status(200).json({
 //       success: true,
-//       order: order
+//       order: {
+//         id: order._id,
+//         userId: order.userId,
+//         cartItems: order.cartItems,
+//         addressInfo: order.addressInfo,
+//         orderStatus: order.orderStatus,
+//         paymentMethod: order.paymentMethod,
+//         paymentStatus: order.paymentStatus,
+//         totalAmount: order.totalAmount,
+//         orderDate: order.orderDate,
+//         paymentId: order.paymentId,
+//         transactionDetails: order.transactionDetails
+//       }
 //     });
 //   } catch (error) {
-//     console.error('Get Order Error:', error);
+//     console.error('❌ Get Order Error:', error);
 //     res.status(500).json({
 //       success: false,
 //       message: 'Failed to get order details'
@@ -200,110 +444,112 @@
 
 // module.exports = { 
 //   createOrder, 
-//   capturePayment,
-//   getOrderDetails
+//   verifyPayment,
+//   getOrderDetails 
 // };
 
 
-// controllers/orderController.js - UPDATED WITH DEBUG INFO
-const Order = require('../../models/Order'); // FIXED PATH
-const paypalHelper = require('../../helpers/paypal');
+// controllers/shop/order-controller.js - COMPLETE FIXED VERSION
+const Order = require('../../models/Order');
+const Cart = require('../../models/Cart');
+const paystack = require('../../helpers/paystack');
 
 const createOrder = async (req, res) => {
-  console.log('=== CREATE ORDER REQUEST RECEIVED ===');
-  
   try {
-    const {
-      userId,
-      cartItems,
-      addressInfo,
-      paymentMethod = 'paypal',
-      totalAmount
-    } = req.body;
-
-    console.log('Request data:', {
-      userId,
-      cartItemsCount: cartItems?.length,
-      totalAmount,
-      addressInfo: addressInfo ? 'present' : 'missing'
+    console.log('🛒 Creating order with data:', {
+      userId: req.body.userId,
+      cartItemsCount: req.body.cartItems?.length,
+      totalAmount: req.body.totalAmount,
+      customerEmail: req.body.customerEmail
     });
+    
+    const { userId, cartItems, addressInfo, totalAmount, customerEmail } = req.body;
 
-    // Validate required fields
-    if (!userId || !cartItems || !totalAmount || cartItems.length === 0) {
-      console.error('Validation failed: Missing required fields');
+    // Enhanced validation with specific error messages
+    if (!userId) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: userId, cartItems, or totalAmount"
+        message: "User ID is required"
       });
     }
 
-    // Log cart item structure
-    console.log('First cart item:', cartItems[0]);
-    console.log('Price type in cart:', typeof cartItems[0].price);
-    console.log('Sale price type:', typeof cartItems[0].salePrice);
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cart items are required and must be an array"
+      });
+    }
 
-    // FIX: Convert price fields to numbers
-    const processedCartItems = cartItems.map(item => ({
-      productId: item.productId,
-      title: item.title,
-      image: item.image || '',
-      price: Number(item.price || 0), // Convert to number
-      salePrice: item.salePrice ? Number(item.salePrice) : undefined,
-      quantity: Number(item.quantity || 1)
-    }));
+    if (!totalAmount || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid total amount is required"
+      });
+    }
 
-    console.log('Processed cart items:', processedCartItems[0]);
+    if (!customerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer email is required"
+      });
+    }
 
-    // Create order in database
+    // Validate each cart item
+    for (let i = 0; i < cartItems.length; i++) {
+      const item = cartItems[i];
+      if (!item.productId || !item.title || !item.price || !item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Cart item ${i + 1} is missing required fields: productId, title, price, or quantity`
+        });
+      }
+    }
+
     const newOrder = new Order({
       userId,
-      cartItems: processedCartItems, // Use processed items
+      cartItems: cartItems.map(item => ({
+        productId: item.productId,
+        title: item.title,
+        image: item.image || '',
+        price: Number(item.price),
+        salePrice: item.salePrice ? Number(item.salePrice) : undefined,
+        quantity: Number(item.quantity)
+      })),
       addressInfo: addressInfo || {},
       orderStatus: 'pending',
-      paymentMethod,
+      paymentMethod: 'paystack',
       paymentStatus: 'pending',
-      totalAmount: Number(totalAmount), // Convert to number
+      totalAmount: Number(totalAmount),
       orderDate: new Date(),
       orderUpdateDate: new Date()
     });
 
-    console.log('Attempting to save order...');
     const savedOrder = await newOrder.save();
-    console.log('✅ Order saved successfully. ID:', savedOrder._id);
+    console.log('✅ Order saved:', savedOrder._id);
 
-    // Check if PayPal is configured
-    if (!paypalHelper || !paypalHelper.isConfigured) {
-      console.error('PayPal helper not configured');
-      savedOrder.paymentStatus = 'failed';
-      savedOrder.orderUpdateDate = new Date();
-      await savedOrder.save();
+    const amountInKobo = Math.round(savedOrder.totalAmount * 100);
+    const transactionReference = `ORDER_${savedOrder._id}_${Date.now()}`;
+    
+    const backendBaseUrl = process.env.BACKEND_BASE_URL || 'http://localhost:5000';
 
-      return res.status(500).json({
-        success: false,
-        message: 'Payment system not configured',
-        orderId: savedOrder._id
-      });
-    }
+    const paystackData = {
+      email: customerEmail,
+      amount: amountInKobo,
+      reference: transactionReference,
+      callback_url: `${backendBaseUrl}/api/shop/orders/verify-payment`,
+      metadata: {
+        orderId: savedOrder._id.toString(),
+        userId: userId,
+        cartCount: cartItems.length
+      }
+    };
 
-    // Generate PayPal return URLs
-    const { returnUrl, cancelUrl } = paypalHelper.generateReturnUrls(savedOrder._id);
-    console.log('Generated URLs:', { returnUrl, cancelUrl });
+    console.log('🔗 Initializing Paystack payment with data:', paystackData);
 
-    // Create PayPal order
-    console.log('Creating PayPal order...');
-    const paypalResult = await paypalHelper.createOrder({
-      orderId: savedOrder._id,
-      totalAmount: savedOrder.totalAmount,
-      cartItems: savedOrder.cartItems,
-      addressInfo: savedOrder.addressInfo,
-      returnUrl,
-      cancelUrl
-    });
+    const paystackResponse = await paystack.initializeTransaction(paystackData);
 
-    console.log('PayPal result:', paypalResult);
-
-    if (!paypalResult.success) {
-      console.error('PayPal order creation failed:', paypalResult.error);
+    if (!paystackResponse.status) {
+      console.error('❌ Paystack initialization failed:', paystackResponse.message);
       
       savedOrder.paymentStatus = 'failed';
       savedOrder.orderUpdateDate = new Date();
@@ -311,178 +557,121 @@ const createOrder = async (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: 'Failed to create PayPal order',
-        error: paypalResult.error,
-        orderId: savedOrder._id
+        message: 'Failed to initialize payment gateway',
+        error: paystackResponse.message
       });
     }
 
-    // Update order with PayPal ID
-    savedOrder.paymentId = paypalResult.paypalOrderId;
+    savedOrder.paymentId = transactionReference;
     savedOrder.orderUpdateDate = new Date();
     await savedOrder.save();
 
-    console.log('✅ PayPal order created:', paypalResult.paypalOrderId);
+    console.log('🔗 Paystack payment link generated for order:', savedOrder._id);
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Order created. Redirect to payment.',
       orderId: savedOrder._id,
-      paypalOrderId: paypalResult.paypalOrderId,
-      approvalUrl: paypalResult.approvalUrl
+      authorization_url: paystackResponse.data.authorization_url
     });
 
   } catch (error) {
-    console.error('❌ CREATE ORDER ERROR:');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('❌ Create Order Error:', error);
     
-    // Handle specific Mongoose errors
     if (error.name === 'ValidationError') {
-      console.error('Validation errors:', error.errors);
       return res.status(400).json({
         success: false,
         message: 'Validation error',
-        errors: Object.keys(error.errors).map(key => ({
-          field: key,
-          message: error.errors[key].message
-        }))
-      });
-    }
-
-    if (error.name === 'CastError') {
-      console.error('Cast error:', error);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid data format',
-        field: error.path,
-        value: error.value
+        errors: Object.values(error.errors).map(err => err.message)
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Internal server error creating order',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error.message
     });
   }
 };
 
-const capturePayment = async (req, res) => {
-  console.log('=== CAPTURE PAYMENT REQUEST ===');
-  
+const verifyPayment = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { reference } = req.query;
     
-    console.log('Capture request for order:', orderId);
+    console.log('🔍 Verifying payment for reference:', reference);
     
-    if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order ID is required'
-      });
+    if (!reference) {
+      console.warn('No reference provided in callback');
+      return res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/payment-failed?error=no_reference`);
     }
 
-    const order = await Order.findById(orderId);
+    const verification = await paystack.verifyTransaction(reference);
     
+    if (!verification.status || verification.data.status !== 'success') {
+      console.error('Paystack verification failed:', verification.message);
+      return res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/payment-failed?error=verification_failed`);
+    }
+
+    const order = await Order.findOne({ paymentId: reference });
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+      console.error('Order not found for reference:', reference);
+      return res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/payment-failed?error=order_not_found`);
     }
 
-    console.log('Found order:', order._id, 'Payment status:', order.paymentStatus);
+    const amountPaid = verification.data.amount / 100;
+    if (amountPaid !== order.totalAmount) {
+      console.error(`Amount mismatch for order ${order._id}. Paid: ${amountPaid}, Expected: ${order.totalAmount}`);
+      order.paymentStatus = 'amount_mismatch';
+      await order.save();
+      return res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/payment-failed?error=amount_mismatch`);
+    }
 
     if (order.paymentStatus === 'completed') {
-      return res.status(200).json({
-        success: true,
-        message: 'Payment already captured',
-        order: order
-      });
+      console.log(`ℹ️ Order ${order._id} already completed via webhook. Redirecting user.`);
+      return res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/order-confirmation/${order._id}`);
     }
 
-    if (!order.paymentId) {
-      return res.status(400).json({
-        success: false,
-        message: 'No PayPal order associated'
-      });
-    }
-
-    // Check PayPal helper
-    if (!paypalHelper || !paypalHelper.isConfigured) {
-      console.error('PayPal helper not configured for capture');
-      return res.status(500).json({
-        success: false,
-        message: 'Payment system not configured'
-      });
-    }
-
-    console.log('Capturing PayPal payment:', order.paymentId);
-    const captureResult = await paypalHelper.capturePayment(order.paymentId);
-    console.log('Capture result:', captureResult);
-
-    if (!captureResult.success) {
-      if (captureResult.statusCode === 422) {
-        order.paymentStatus = 'failed';
-        order.orderStatus = 'cancelled';
-        order.orderUpdateDate = new Date();
-        await order.save();
-
-        return res.status(422).json({
-          success: false,
-          message: 'Payment already captured or order expired'
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        message: 'Payment capture failed',
-        error: captureResult.error
-      });
-    }
-
-    // Update order with successful payment
     order.paymentStatus = 'completed';
     order.orderStatus = 'confirmed';
-    order.payerId = captureResult.payer?.payer_id || captureResult.payer?.email_address;
+    order.payerId = verification.data.customer.email;
     order.orderUpdateDate = new Date();
     order.transactionDetails = {
-      captureId: captureResult.captureId,
-      status: captureResult.status,
-      capturedAt: new Date(),
-      payer: captureResult.payer
+      gateway: 'paystack',
+      chargeId: verification.data.id,
+      channel: verification.data.channel,
+      ipAddress: verification.data.ip_address,
+      paidAt: verification.data.paid_at
     };
-
+    
     await order.save();
-    console.log('✅ Payment captured successfully for order:', order._id);
+    console.log(`✅ Order ${order._id} confirmed via callback verification.`);
 
-    res.status(200).json({
-      success: true,
-      message: 'Payment captured successfully',
-      order: {
-        id: order._id,
-        status: order.orderStatus,
-        paymentStatus: order.paymentStatus,
-        totalAmount: order.totalAmount
-      },
-      transactionId: captureResult.captureId
-    });
+    try {
+      const cart = await Cart.findOne({ userId: order.userId });
+      if (cart) {
+        cart.items = [];
+        cart.lastUpdated = new Date();
+        await cart.save();
+        console.log(`🛒 Cart cleared for user: ${order.userId}`);
+      } else {
+        console.log(`ℹ️ No cart found for user: ${order.userId}`);
+      }
+    } catch (cartError) {
+      console.error(`❌ Error clearing cart for user ${order.userId}:`, cartError);
+    }
+
+    res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/order-confirmation/${order._id}`);
 
   } catch (error) {
-    console.error('❌ CAPTURE PAYMENT ERROR:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to capture payment',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('❌ Verify Payment Error:', error);
+    res.redirect(`${process.env.FRONTEND_BASE_URL || 'http://localhost:5173'}/payment-failed?error=server_error`);
   }
 };
 
 const getOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
+    console.log('📋 Fetching order details:', orderId);
     
     const order = await Order.findById(orderId);
     
@@ -495,10 +684,22 @@ const getOrderDetails = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      order: order
+      order: {
+        id: order._id,
+        userId: order.userId,
+        cartItems: order.cartItems,
+        addressInfo: order.addressInfo,
+        orderStatus: order.orderStatus,
+        paymentMethod: order.paymentMethod,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        orderDate: order.orderDate,
+        paymentId: order.paymentId,
+        transactionDetails: order.transactionDetails
+      }
     });
   } catch (error) {
-    console.error('Get Order Error:', error);
+    console.error('❌ Get Order Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get order details'
@@ -508,6 +709,6 @@ const getOrderDetails = async (req, res) => {
 
 module.exports = { 
   createOrder, 
-  capturePayment,
-  getOrderDetails
+  verifyPayment,
+  getOrderDetails 
 };

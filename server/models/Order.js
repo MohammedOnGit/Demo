@@ -1,4 +1,4 @@
-// models/Order.js - UPDATED
+// models/Order.js - COMPLETE FIXED FILE
 const mongoose = require("mongoose");
 
 // Define a schema
@@ -19,10 +19,10 @@ const orderSchema = new mongoose.Schema({
       },
       image: String,
       price: {
-        type: Number,  // CHANGED FROM String TO Number
+        type: Number,
         required: true
       },
-      salePrice: {  // ADD THIS FIELD
+      salePrice: {
         type: Number
       },
       quantity: {
@@ -53,8 +53,8 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['paypal', 'cod', 'card'],
-    default: 'paypal'
+    enum: ['paypal', 'paystack', 'cod', 'card'], // FIXED: Added 'paystack'
+    default: 'paypal' // Optional: Change to 'paystack' if you prefer
   },
   paymentStatus: {
     type: String,
@@ -74,8 +74,8 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  paymentId: String, // PayPal order ID
-  payerId: String, // PayPal payer ID
+  paymentId: String, // PayPal order ID or Paystack reference
+  payerId: String, // PayPal payer ID or Paystack customer email
   // ADD THESE FIELDS FOR BETTER TRACKING
   transactionDetails: {
     captureId: String,
