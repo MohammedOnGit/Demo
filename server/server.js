@@ -1,3 +1,4 @@
+// server.js - UPDATE RATE LIMIT
 const express = require("express");
 const mongoose = require("mongoose");
 require("dotenv").config();
@@ -14,6 +15,7 @@ const shopCartRoutes = require("./routes/shop/cart-routes");
 const shopAddressRoutes = require("./routes/shop/address-routes");
 const shopSearchRoutes = require("./routes/shop/search-routes");
 const shopWishlistRoutes = require("./routes/shop/wishlist-routes");
+const shopOrderRoutes = require("./routes/shop/shop/order-routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,18 +31,29 @@ app.use(
   })
 );
 
-// Rate limit ONLY API routes
-app.use(
-  "/api",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-  })
-);
+// Rate limit with more generous settings for development
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Increased from 100 to 500 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later."
+  },
+  skip: (req) => {
+    // Skip rate limiting for certain paths or in development
+    if (process.env.NODE_ENV === 'development') {
+      return true; // Disable rate limiting in development
+    }
+    return false;
+  }
+});
+
+app.use("/api", limiter);
 
 app.use(cookieParser());
 
-// ✅ REQUIRED: JSON + URL-ENCODED BODY PARSERS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -57,7 +70,8 @@ app.use("/api/shop/products", shopProductsRoutes);
 app.use("/api/shop/cart", shopCartRoutes);
 app.use("/api/shop/address", shopAddressRoutes);
 app.use("/api/shop/search", shopSearchRoutes);
-app.use("/api/shop/wishlist", shopWishlistRoutes); // ADD THIS LINE
+app.use("/api/shop/wishlist", shopWishlistRoutes);
+app.use("/api/shop/orders", shopOrderRoutes);
 
 /* -------------------- HEALTH CHECK -------------------- */
 app.get("/", (req, res) => {
@@ -75,4 +89,5 @@ app.use((err, req, res, next) => {
 /* -------------------- START SERVER -------------------- */
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📊 Rate limit: 500 requests per 15 minutes`);
 });
