@@ -108,10 +108,33 @@ const PayPalCancel = () => {
           <Button onClick={() => navigate("/shop/checkout")}>
             Return to Checkout
           </Button>
-          <Button variant="outline" onClick={() => navigate("/shop")}>
+          <Button variant="outline" onClick={() => navigate("/shop/home")}>
             Continue Shopping
           </Button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Admin Dashboard Redirect Component
+const AdminRedirect = ({ user }) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is admin and redirect to dashboard
+    if (user && user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    } else {
+      navigate("/unauth-page", { replace: true });
+    }
+  }, [user, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <p className="text-gray-600">Redirecting to admin dashboard...</p>
       </div>
     </div>
   );
@@ -183,6 +206,9 @@ function App() {
     <div className="min-h-screen bg-background">
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
+          {/* ===================== ROOT REDIRECT ===================== */}
+          <Route path="/" element={<Navigate to="/shop/home" replace />} />
+          
           {/* ===================== AUTH ROUTES ===================== */}
           <Route
             path="/auth"
@@ -206,7 +232,15 @@ function App() {
               </CheckAuth>
             }
           >
-            <Route index element={<Navigate to="dashboard" />} />
+            {/* This route handles /admin redirect based on user role */}
+            <Route 
+              index 
+              element={
+                user?.role === "admin" ? 
+                  <Navigate to="dashboard" replace /> : 
+                  <Navigate to="/unauth-page" replace />
+              } 
+            />
             <Route path="dashboard" element={<AdminDashBoard />} />
             <Route path="features" element={<AdminFeatures />} />
             <Route path="orders" element={<AdminOrders />} />
@@ -249,6 +283,19 @@ function App() {
           <Route
             path="/shop/register"
             element={<Navigate to="/auth/register" replace />}
+          />
+
+          {/* ===================== DIRECT ADMIN ACCESS ===================== */}
+          {/* This route directly redirects to admin dashboard for logged-in admin users */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              isAuthenticated && user?.role === "admin" ? (
+                <Navigate to="/admin/dashboard" replace />
+              ) : (
+                <Navigate to="/auth/login" replace />
+              )
+            }
           />
 
           {/* ===================== UNAUTHORIZED & 404 ===================== */}
