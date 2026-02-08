@@ -18,6 +18,7 @@ const shopSearchRoutes = require("./routes/shop/search-routes");
 const shopWishlistRoutes = require("./routes/shop/wishlist-routes");
 const shopOrderRoutes = require("./routes/shop/order-routes");
 const shopReviewRoutes = require("./routes/shop/review-routes");
+const commonFeatureRoutes = require("./routes/common/feature-routes");
 
 // -------------------- APP SETUP --------------------
 const app = express();
@@ -70,7 +71,7 @@ app.use("/api/shop/search", shopSearchRoutes);
 app.use("/api/shop/wishlist", shopWishlistRoutes);
 app.use("/api/shop/orders", shopOrderRoutes);
 app.use("/api/shop/reviews", shopReviewRoutes);
-
+app.use("/api/common/features", commonFeatureRoutes);
 // -------------------- HEALTH CHECK --------------------
 app.get("/", (req, res) => {
   res.status(200).json({ 
