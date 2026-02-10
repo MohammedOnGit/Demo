@@ -8,7 +8,10 @@ import shopAddressReducer from "./shop/address-slice";
 import searchReducer from "./shop/search-slice";
 import wishlistReducer from "./shop/wishlist-slice";
 import shopOrderReducer from "./shop/order-slice";
-import shopReviewReducer from "./shop/review-slice"; // ✅ ADDED
+import shopReviewReducer from "./shop/review-slice"; 
+
+import commonFeatureSlice from "./common-slice"; 
+
 import clearReducer from "./clear-slice";
 
 const store = configureStore({
@@ -24,6 +27,7 @@ const store = configureStore({
     shopOrder: shopOrderReducer,
     shopReviews: shopReviewReducer, // ✅ ADDED
     clear: clearReducer,
+    commonFeature: commonFeatureSlice, 
   },
 });
 

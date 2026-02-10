@@ -20,6 +20,7 @@ function ProductImageUpload({
   setImageLoadingState,
   isEditMode = false,
   isDisabled = false,
+  isCustomStyling = false,
 }) {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -152,7 +153,7 @@ function ProductImageUpload({
   const isInteractionDisabled = isUploading || isEditMode || isDisabled;
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className={`w-full ${isCustomStyling ? " ": "max-w-md mx-auto" }` }>
       <Label htmlFor="image-upload" className="text-base font-medium">
         Product Image <span className="text-destructive">*</span>
       </Label>
