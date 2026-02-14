@@ -111,20 +111,35 @@
 // });
 
 
-
 // -------------------- IMPORTS --------------------
 const express = require("express");
 const mongoose = require("mongoose");
-require("dotenv").config();
+const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
+dotenv.config();
+
+// -------------------- ENV VALIDATION --------------------
+const {
+  PORT = 5000,
+  MONGO_URI,
+  CORS_ORIGIN = "http://localhost:5173",
+  NODE_ENV = "development",
+} = process.env;
+
+if (!MONGO_URI) {
+  console.error("❌ Missing MONGO_URI in environment variables");
+  process.exit(1);
+}
+
 // -------------------- ROUTES --------------------
 const authRouter = require("./routes/auth/auth-routes");
 const adminProductRoutes = require("./routes/admin/product-routes");
 const adminOrderRoutes = require("./routes/admin/order-routes");
+
 const shopProductsRoutes = require("./routes/shop/products-routes");
 const shopCartRoutes = require("./routes/shop/cart-routes");
 const shopAddressRoutes = require("./routes/shop/address-routes");
@@ -132,53 +147,66 @@ const shopSearchRoutes = require("./routes/shop/search-routes");
 const shopWishlistRoutes = require("./routes/shop/wishlist-routes");
 const shopOrderRoutes = require("./routes/shop/order-routes");
 const shopReviewRoutes = require("./routes/shop/review-routes");
+
 const commonFeatureRoutes = require("./routes/common/feature-routes");
 
-// -------------------- APP SETUP --------------------
+// -------------------- APP INIT --------------------
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// -------------------- MIDDLEWARE --------------------
-// Security headers
+// -------------------- SECURITY --------------------
 app.use(helmet());
 
-// CORS configuration - ADD x-client-request-id to allowed headers
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-client-request-id'], // ADDED
-  exposedHeaders: ['Set-Cookie']
-}));
+// -------------------- CORS --------------------
+app.use(
+  cors({
+    origin: CORS_ORIGIN,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    exposedHeaders: ["Set-Cookie"],
+  })
+);
 
-// Rate limiter
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // max requests per window
+// -------------------- BODY PARSERS --------------------
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// -------------------- RATE LIMITING --------------------
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => NODE_ENV === "development",
   message: {
     success: false,
-    message: "Too many requests, please try again later."
+    message: "Too many requests, please try again later.",
   },
-  skip: (req) => process.env.NODE_ENV === 'development'
 });
-app.use("/api", limiter);
 
-// Body parsers - ADD limits for safety
-app.use(cookieParser()); // needed for authMiddleware
-app.use(express.json({ limit: '10mb' })); // ADDED limit
-app.use(express.urlencoded({ extended: true, limit: '10mb' })); // ADDED limit
+app.use("/api", apiLimiter);
 
 // -------------------- DATABASE --------------------
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+  .connect(MONGO_URI, {
+    autoIndex: NODE_ENV !== "production",
+  })
   .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB connection failed:", err);
+    process.exit(1);
+  });
 
-// -------------------- ROUTES --------------------
+// -------------------- ROUTE REGISTRATION --------------------
+
+// Auth
 app.use("/api/auth", authRouter);
+
+// Admin
 app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
+
+// Shop
 app.use("/api/shop/products", shopProductsRoutes);
 app.use("/api/shop/cart", shopCartRoutes);
 app.use("/api/shop/address", shopAddressRoutes);
@@ -186,42 +214,56 @@ app.use("/api/shop/search", shopSearchRoutes);
 app.use("/api/shop/wishlist", shopWishlistRoutes);
 app.use("/api/shop/orders", shopOrderRoutes);
 app.use("/api/shop/reviews", shopReviewRoutes);
+
+// Common
 app.use("/api/common/feature", commonFeatureRoutes);
+
 // -------------------- HEALTH CHECK --------------------
-app.get("/", (req, res) => {
-  res.status(200).json({ 
+app.get("/", (_, res) => {
+  res.status(200).json({
     success: true,
-    message: "API running...",
+    message: "API running",
     version: "1.0.0",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-app.get("/health", (req, res) => {
+app.get("/health", (_, res) => {
   res.status(200).json({
     success: true,
-    message: "Server is healthy",
-    database: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    timestamp: new Date().toISOString()
+    server: "ok",
+    database:
+      mongoose.connection.readyState === 1
+        ? "connected"
+        : "disconnected",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// -------------------- 404 HANDLER --------------------
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
   });
 });
 
 // -------------------- GLOBAL ERROR HANDLER --------------------
-app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
-  res.status(err.status || 500).json({ 
-    success: false, 
-    message: err.message || "Server Error" 
+app.use((err, req, res, _next) => {
+  console.error("❌ Server Error:", err);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message:
+      NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
   });
 });
 
 // -------------------- START SERVER --------------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Rate limit: 500 requests per 15 minutes`);
-  console.log(`🔗 CORS Origin: ${process.env.CORS_ORIGIN || "http://localhost:5173"}`);
-  console.log(`📸 Feature image upload: /api/common/feature/add`);
-  console.log(`🏪 Admin order routes: /api/admin/orders`);
-  console.log(`🛒 Shop order routes: /api/shop/orders`);
-  console.log(`📝 Review routes: /api/shop/reviews`);
+  console.log(`🌍 Environment: ${NODE_ENV}`);
+  console.log(`🔗 CORS Origin: ${CORS_ORIGIN}`);
 });

@@ -1,17 +1,19 @@
 const express = require("express");
+const router = express.Router();
 const {
   addFeatureImage,
   getFeatureImages,
-} = require("../../controllers/common/features");
-
+  deleteFeatureImage,
+} = require("../../controllers/common/features-controller");
 const { authMiddleware } = require("../../controllers/auth/auth-controller");
 
-const router = express.Router();
-
-// Protect all routes
-router.use(authMiddleware);
-
-router.post("/add", addFeatureImage);
+// Public routes - anyone can view feature images
 router.get("/get", getFeatureImages);
 
+// Protected routes - only authenticated users (admin) can modify
+router.post("/add", authMiddleware, addFeatureImage);
+router.delete("/delete/:id", authMiddleware, deleteFeatureImage);
+
 module.exports = router;
+
+

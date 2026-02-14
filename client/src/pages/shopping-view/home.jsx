@@ -1,39 +1,232 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useSwipeable } from "react-swipeable";
+// import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import { useNavigate } from "react-router-dom";
+// import { useSwipeable } from "react-swipeable";
+
+// import { Button } from "@/components/ui/button";
+// import { Card, CardContent } from "@/components/ui/card";
+// import { Badge } from "@/components/ui/badge";
+// import { Skeleton } from "@/components/ui/skeleton";
+
+// import {
+//   ChevronLeft,
+//   ChevronRight,
+//   Sparkles,
+//   ShoppingBag,
+//   Truck,
+//   Shield,
+//   Award,
+//   Tag,
+//   ShirtIcon,
+//   Venus,
+//   BabyIcon,
+//   WatchIcon,
+//   TrophyIcon,
+// } from "lucide-react";
+
+// import {
+//   fetchAllFilteredProducts,
+//   fetchProductDetails,
+// } from "@/store/shop/products-slice";
+// import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
+// import { fetchWishlist } from "@/store/shop/wishlist-slice";
+// import { getFeatureImages } from "@/store/common-slice";
+
+// import ShoppingProductTile from "@/components/shoping-view/product-tile";
+// import ProductDetailsDialog from "@/components/shoping-view/product-details";
+// import { toast } from "sonner";
+// import { cn } from "@/lib/utils";
+
+// /* -------------------------------------------------------------------------- */
+
+// const AUTOPLAY_DELAY = 5000;
+// const MAX_FEATURED_PRODUCTS = 8;
+
+// const heroTitles = ["Premium Fragrances", "Luxury Scents", "Elegant Aromas"];
+
+// /* -------------------------------------------------------------------------- */
+
+// export default function ShoppingHome() {
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+
+//   const { products = [], isLoading, productDetails } = useSelector(
+//     (state) => state.shopProducts || {}
+//   );
+
+//   const { featureImageList = [] } = useSelector(
+//     (state) => state.commonFeature || {}
+//   );
+
+//   const { user } = useSelector((state) => state.auth || {});
+
+//   const [currentIndex, setCurrentIndex] = useState(0);
+//   const [paused, setPaused] = useState(false);
+//   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
+
+//   const autoplayRef = useRef(null);
+
+//   /* ----------------------------- EFFECTS ----------------------------- */
+
+//   useEffect(() => {
+//     dispatch(getFeatureImages());
+//     dispatch(fetchAllFilteredProducts({ filterParams: {}, sortParam: null }));
+//     if (user?.id) dispatch(fetchWishlist());
+//   }, [dispatch, user?.id]);
+
+//   useEffect(() => {
+//     if (!featureImageList.length) return;
+
+//     autoplayRef.current = setInterval(() => {
+//       if (!paused) {
+//         setCurrentIndex((i) => (i + 1) % featureImageList.length);
+//       }
+//     }, AUTOPLAY_DELAY);
+
+//     return () => clearInterval(autoplayRef.current);
+//   }, [paused, featureImageList.length]);
+
+//   /* ----------------------------- HANDLERS ----------------------------- */
+
+//   const next = () =>
+//     setCurrentIndex((i) => (i + 1) % featureImageList.length);
+
+//   const prev = () =>
+//     setCurrentIndex(
+//       (i) => (i - 1 + featureImageList.length) % featureImageList.length
+//     );
+
+//   const swipeHandlers = useSwipeable({
+//     onSwipedLeft: next,
+//     onSwipedRight: prev,
+//     trackMouse: true,
+//   });
+
+//   const featuredProducts = useMemo(
+//     () => products.slice(0, MAX_FEATURED_PRODUCTS),
+//     [products]
+//   );
+
+//   /* ----------------------------- RENDER ----------------------------- */
+
+//   return (
+//     <div className="min-h-screen">
+
+//       {/* HERO */}
+//       {featureImageList.length > 0 ? (
+//         <section
+//           {...swipeHandlers}
+//           onMouseEnter={() => setPaused(true)}
+//           onMouseLeave={() => setPaused(false)}
+//           className="relative h-[500px] md:h-[600px] overflow-hidden group"
+//         >
+//           <div
+//             className="flex h-full transition-transform duration-700"
+//             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+//           >
+//             {featureImageList.map((img, i) => (
+//               <div key={img._id} className="w-full h-full flex-shrink-0 relative">
+//                 <img
+//                   src={img.image}
+//                   className="w-full h-full object-cover"
+//                 />
+//                 <div className="absolute inset-0 bg-black/50" />
+
+//                 <div className="absolute inset-0 flex items-center">
+//                   <div className="container mx-auto px-4 space-y-4">
+//                     <Badge className="bg-white/20 text-white">
+//                       <Sparkles className="h-3 w-3 mr-1" />
+//                       New Collection
+//                     </Badge>
+//                     <h1 className="text-5xl font-bold text-white">
+//                       {heroTitles[i % heroTitles.length]}
+//                     </h1>
+//                     <Button
+//                       size="lg"
+//                       className="bg-white text-black"
+//                       onClick={() => navigate("/shop/listing")}
+//                     >
+//                       <ShoppingBag className="h-5 w-5 mr-2" />
+//                       Shop Now
+//                     </Button>
+//                   </div>
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+
+//           {featureImageList.length > 1 && (
+//             <>
+//               <Button
+//                 size="icon"
+//                 onClick={prev}
+//                 className="absolute left-4 top-1/2"
+//               >
+//                 <ChevronLeft />
+//               </Button>
+//               <Button
+//                 size="icon"
+//                 onClick={next}
+//                 className="absolute right-4 top-1/2"
+//               >
+//                 <ChevronRight />
+//               </Button>
+//             </>
+//           )}
+//         </section>
+//       ) : null}
+
+//       {/* FEATURED PRODUCTS */}
+//       <section className="py-12">
+//         <div className="container mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+//           {isLoading
+//             ? [...Array(4)].map((_, i) => (
+//                 <Skeleton key={i} className="h-80" />
+//               ))
+//             : featuredProducts.map((p) => (
+//                 <ShoppingProductTile
+//                   key={p._id}
+//                   product={p}
+//                   handleAddtoCart={(product) => {
+//                     dispatch(
+//                       addToCart({
+//                         userId: user.id,
+//                         productId: product._id,
+//                         quantity: 1,
+//                       })
+//                     ).then(() => dispatch(fetchCartItems(user.id)));
+//                   }}
+//                   handleGetProductDetails={(id) => {
+//                     dispatch(fetchProductDetails({ productId: id })).then(() =>
+//                       setOpenDetailsDialog(true)
+//                     );
+//                   }}
+//                 />
+//               ))}
+//         </div>
+//       </section>
+
+//       <ProductDetailsDialog
+//         open={openDetailsDialog}
+//         setOpen={setOpenDetailsDialog}
+//         productDetails={productDetails}
+//       />
+//     </div>
+//   );
+// }
+
+
+
+
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import {
-  BabyIcon,
-  ShirtIcon,
-  Venus,
-  WatchIcon,
-  UmbrellaIcon,
-  TrophyIcon,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Tag,
-  Award,
-  Shield,
-  Truck,
-  ShoppingBag,
-  PackageOpen,
-} from "lucide-react";
+import { useSwipeable } from "react-swipeable";
 
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-
-import bannerOne from "../../assets/ban/b-1.webp";
-import bannerTwo from "../../assets/ban/b-2.webp";
-import bannerThree from "../../assets/ban/b-3.webp";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronLeft, ChevronRight, Sparkles, ShoppingBag } from "lucide-react";
 
 import {
   fetchAllFilteredProducts,
@@ -41,104 +234,59 @@ import {
 } from "@/store/shop/products-slice";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { fetchWishlist } from "@/store/shop/wishlist-slice";
+import { getFeatureImages } from "@/store/common-slice";
 
 import ShoppingProductTile from "@/components/shoping-view/product-tile";
 import ProductDetailsDialog from "@/components/shoping-view/product-details";
 
-import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-
-/* -------------------------------------------------------------------------- */
-/*                                    CONSTS                                  */
 /* -------------------------------------------------------------------------- */
 
 const AUTOPLAY_DELAY = 5000;
 const MAX_FEATURED_PRODUCTS = 8;
-const slides = [bannerOne, bannerTwo, bannerThree];
-
-const categoriesWithIcons = [
-  { id: "men", label: "Men", icon: ShirtIcon, color: "from-blue-500 to-cyan-500" },
-  { id: "women", label: "Women", icon: Venus, color: "from-pink-500 to-rose-500" },
-  { id: "kids", label: "Kids", icon: BabyIcon, color: "from-green-500 to-emerald-500" },
-  { id: "footwear", label: "Footwear", icon: TrophyIcon, color: "from-amber-500 to-orange-500" },
-  { id: "accessories", label: "Accessories", icon: WatchIcon, color: "from-purple-500 to-violet-500" },
-];
-
-const trustBadges = [
-  { icon: Truck, title: "Free Shipping", desc: "On orders over GHC 300", bg: "blue-50", color: "blue-600" },
-  { icon: Shield, title: "Secure Payment", desc: "100% secure & safe", bg: "green-50", color: "green-600" },
-  { icon: Award, title: "Best Quality", desc: "Authentic products", bg: "purple-50", color: "purple-600" },
-  { icon: Tag, title: "Best Price", desc: "Guaranteed lowest price", bg: "amber-50", color: "amber-600" },
-];
-
-const heroTitles = [
-  "Premium Fragrances",
-  "Luxury Scents",
-  "Elegant Aromas",
-];
-
-/* -------------------------------------------------------------------------- */
-/*                               MAIN COMPONENT                               */
-/* -------------------------------------------------------------------------- */
+const heroTitles = ["Premium Fragrances", "Luxury Scents", "Elegant Aromas"];
 
 export default function ShoppingHome() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { products = [], isLoading, error, productDetails } = useSelector(
+  const { products = [], isLoading, productDetails } = useSelector(
     (state) => state.shopProducts || {}
   );
-  const { user } = useSelector((state) => state.auth || {});
-  const { items: wishlistItems } = useSelector(
-    (state) => state.wishlist || { items: [] }
+  const { featureImageList = [] } = useSelector(
+    (state) => state.commonFeature || {}
   );
+  const { user } = useSelector((state) => state.auth || {});
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
-
   const autoplayRef = useRef(null);
 
-  /* ------------------------------ SIDE EFFECTS ----------------------------- */
+  /* ----------------------------- EFFECTS ----------------------------- */
 
   useEffect(() => {
+    dispatch(getFeatureImages());
+    dispatch(fetchAllFilteredProducts({ filterParams: {}, sortParam: null }));
     if (user?.id) dispatch(fetchWishlist());
   }, [dispatch, user?.id]);
 
   useEffect(() => {
-    dispatch(fetchAllFilteredProducts({ filterParams: {}, sortParam: null }));
-  }, [dispatch]);
-
-  useEffect(() => {
+    if (!featureImageList.length) return;
     autoplayRef.current = setInterval(() => {
-      if (!paused) setCurrentIndex((i) => (i + 1) % slides.length);
+      if (!paused) {
+        setCurrentIndex((i) => (i + 1) % featureImageList.length);
+      }
     }, AUTOPLAY_DELAY);
 
     return () => clearInterval(autoplayRef.current);
-  }, [paused]);
+  }, [paused, featureImageList.length]);
 
-  /* ------------------------------ MEMO VALUES ------------------------------ */
+  /* ----------------------------- HANDLERS ----------------------------- */
 
-  const featuredProducts = useMemo(
-    () => products.slice(0, MAX_FEATURED_PRODUCTS),
-    [products]
-  );
-
-  /* ------------------------------ HANDLERS -------------------------------- */
-
-  const next = useCallback(
-    () => setCurrentIndex((i) => (i + 1) % slides.length),
-    []
-  );
-
-  const prev = useCallback(
-    () => setCurrentIndex((i) => (i - 1 + slides.length) % slides.length),
-    []
-  );
-
-  const goToSlide = useCallback((index) => setCurrentIndex(index), []);
+  const next = () =>
+    setCurrentIndex((i) => (i + 1) % featureImageList.length);
+  const prev = () =>
+    setCurrentIndex((i) => (i - 1 + featureImageList.length) % featureImageList.length);
 
   const swipeHandlers = useSwipeable({
     onSwipedLeft: next,
@@ -146,155 +294,91 @@ export default function ShoppingHome() {
     trackMouse: true,
   });
 
-  const handleNavigateToListingPage = useCallback(
-    (item, type) => {
-      const params = new URLSearchParams();
-      params.set(type, item.id);
-      navigate(`/shop/listing?${params.toString()}`);
-    },
-    [navigate]
+  const featuredProducts = useMemo(
+    () => products.slice(0, MAX_FEATURED_PRODUCTS),
+    [products]
   );
 
-  const handleGetProductDetails = useCallback(
-    (productId) => {
-      dispatch(fetchProductDetails({ productId })).then((res) => {
-        if (res?.meta?.requestStatus === "fulfilled") {
-          setOpenDetailsDialog(true);
-        }
-      });
-    },
-    [dispatch]
-  );
-
-  const handleAddtoCart = useCallback(
-    (product) => {
-      if (!user?.id || !product?._id) return;
-
-      dispatch(
-        addToCart({
-          userId: user.id,
-          productId: product._id,
-          quantity: 1,
-        })
-      ).then((res) => {
-        if (res?.meta?.requestStatus === "fulfilled") {
-          dispatch(fetchCartItems(user.id));
-          toast.success("", {
-            description: `${product.title} added successfully`,
-          });
-        } else {
-          toast.error("Failed to add to cart");
-        }
-      });
-    },
-    [dispatch, user?.id]
-  );
-
-  /* -------------------------------------------------------------------------- */
-  /*                                   RENDER                                   */
-  /* -------------------------------------------------------------------------- */
+  /* ----------------------------- RENDER ----------------------------- */
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background to-muted/10">
+    <div className="min-h-screen">
 
-      {/* ============================== HERO ================================== */}
-      <section
-        {...swipeHandlers}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        className="relative h-[500px] md:h-[600px] overflow-hidden group"
-      >
-        <div
-          className="flex h-full transition-transform duration-700 ease-out"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+      {/* HERO SLIDER */}
+      {featureImageList.length > 0 && (
+        <section
+          {...swipeHandlers}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          className="relative h-[500px] md:h-[600px] overflow-hidden group"
         >
-          {slides.map((src, i) => (
-            <div key={i} className="w-full h-full flex-shrink-0 relative">
-              <img src={src} loading="lazy" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/40" />
-
-              <div className="absolute inset-0 flex items-center">
-                <div className="container mx-auto px-4 max-w-xl space-y-4">
-                  <Badge className="bg-white/20 text-white border-0">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    New Collection
-                  </Badge>
-                  <h1 className="text-4xl md:text-6xl font-bold text-white">
-                    {heroTitles[i]}
-                  </h1>
-                  <p className="text-white/90 text-lg">
-                    Discover our exclusive collection of premium perfumes
-                  </p>
-                  <Button
-                    size="lg"
-                    className="bg-white text-black"
-                    onClick={() => navigate("/shop/listing")}
-                  >
-                    <ShoppingBag className="h-5 w-5 mr-2" />
-                    Shop Now
-                  </Button>
+          <div
+            className="flex h-full transition-transform duration-700"
+            style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          >
+            {featureImageList.map((img, i) => (
+              <div key={img._id} className="w-full h-full flex-shrink-0 relative">
+                <img src={img.image} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 flex items-center">
+                  <div className="container mx-auto px-4 space-y-4">
+                    <Badge className="bg-white/20 text-white">
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      New Collection
+                    </Badge>
+                    <h1 className="text-5xl font-bold text-white">
+                      {heroTitles[i % heroTitles.length]}
+                    </h1>
+                    <Button
+                      size="lg"
+                      className="bg-white text-black"
+                      onClick={() => navigate("/shop/listing")}
+                    >
+                      <ShoppingBag className="h-5 w-5 mr-2" />
+                      Shop Now
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <Button onClick={prev} size="icon" className="absolute left-4 top-1/2">
-          <ChevronLeft />
-        </Button>
-        <Button onClick={next} size="icon" className="absolute right-4 top-1/2">
-          <ChevronRight />
-        </Button>
-      </section>
+          {featureImageList.length > 1 && (
+            <>
+              <Button size="icon" onClick={prev} className="absolute left-4 top-1/2">
+                <ChevronLeft />
+              </Button>
+              <Button size="icon" onClick={next} className="absolute right-4 top-1/2">
+                <ChevronRight />
+              </Button>
+            </>
+          )}
+        </section>
+      )}
 
-      {/* ============================ TRUST =================================== */}
-      <section className="py-8 border-y">
-        <div className="container mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {trustBadges.map((b, i) => (
-            <div key={i} className="space-y-3">
-              <div className={`h-14 w-14 mx-auto rounded-full bg-${b.bg} flex items-center justify-center`}>
-                <b.icon className={`h-7 w-7 text-${b.color}`} />
-              </div>
-              <h3 className="font-semibold">{b.title}</h3>
-              <p className="text-sm text-muted-foreground">{b.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ========================== CATEGORIES ================================ */}
-      <section className="py-12">
-        <div className="container mx-auto grid grid-cols-2 md:grid-cols-5 gap-6">
-          {categoriesWithIcons.map((cat) => (
-            <Card
-              key={cat.id}
-              onClick={() => handleNavigateToListingPage(cat, "category")}
-              className="cursor-pointer hover:shadow-xl transition"
-            >
-              <CardContent className="flex flex-col items-center p-6">
-                <div className={cn("h-16 w-16 rounded-full bg-gradient-to-br", cat.color, "flex items-center justify-center")}>
-                  <cat.icon className="h-8 w-8 text-white" />
-                </div>
-                <span className="mt-4 font-semibold">{cat.label}</span>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* ========================== FEATURED ================================ */}
+      {/* FEATURED PRODUCTS */}
       <section className="py-12">
         <div className="container mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {isLoading
-            ? [...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-80 w-full" />
-              ))
+            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-80" />)
             : featuredProducts.map((p) => (
                 <ShoppingProductTile
                   key={p._id}
                   product={p}
-                  handleGetProductDetails={handleGetProductDetails}
-                  handleAddtoCart={handleAddtoCart}
+                  handleAddtoCart={() => {
+                    dispatch(
+                      addToCart({
+                        userId: user.id,
+                        productId: p._id,
+                        quantity: 1,
+                      })
+                    ).then(() => dispatch(fetchCartItems(user.id)));
+                  }}
+                  handleGetProductDetails={() => {
+                    dispatch(fetchProductDetails({ productId: p._id })).then(() =>
+                      setOpenDetailsDialog(true)
+                    );
+                  }}
                 />
               ))}
         </div>
@@ -304,7 +388,6 @@ export default function ShoppingHome() {
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}
         productDetails={productDetails}
-        handleAddtoCart={handleAddtoCart}
       />
     </div>
   );
