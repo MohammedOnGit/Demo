@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   DialogContent,
   DialogHeader,
@@ -40,19 +40,36 @@ import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import { Progress } from "../ui/progress";
 
-const statusConfig = {
-  pending: { variant: "default", label: "Pending", icon: Clock, color: "text-amber-500", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
-  processing: { variant: "secondary", label: "Processing", icon: Package, color: "text-blue-500", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
-  confirmed: { variant: "outline", label: "Confirmed", icon: ShieldCheck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-  shipping: { variant: "outline", label: "On the Way", icon: Truck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-  shipped: { variant: "outline", label: "On the Way", icon: Truck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
-  delivered: { variant: "success", label: "Delivered", icon: CheckCircle2, color: "text-emerald-500", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
-  cancelled: { variant: "destructive", label: "Cancelled", icon: X, color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" },
-  failed: { variant: "destructive", label: "Failed", icon: X, color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" },
-};
+import {statusConfig} from "../../config"
+
+// const statusConfig = {
+//   pending: { variant: "default", label: "Pending", icon: Clock, color: "text-amber-500", bgColor: "bg-amber-50", borderColor: "border-amber-200" },
+//   processing: { variant: "secondary", label: "Processing", icon: Package, color: "text-blue-500", bgColor: "bg-blue-50", borderColor: "border-blue-200" },
+//   confirmed: { variant: "outline", label: "Confirmed", icon: ShieldCheck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+//   shipping: { variant: "outline", label: "On the Way", icon: Truck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+//   shipped: { variant: "outline", label: "On the Way", icon: Truck, color: "text-purple-500", bgColor: "bg-purple-50", borderColor: "border-purple-200" },
+//   delivered: { variant: "success", label: "Delivered", icon: CheckCircle2, color: "text-emerald-500", bgColor: "bg-emerald-50", borderColor: "border-emerald-200" },
+//   cancelled: { variant: "destructive", label: "Cancelled", icon: X, color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" },
+//   failed: { variant: "destructive", label: "Failed", icon: X, color: "text-red-500", bgColor: "bg-red-50", borderColor: "border-red-200" },
+// };
+
+const tabs = ["details", "timeline", "items", "support"];
+const statusOrder = ["pending", "processing", "confirmed", "shipping", "delivered"];
 
 function ShoppingOrderDetailsView({ order, onClose }) {
   const [activeTab, setActiveTab] = useState("details");
+
+  const handleTabChange = useCallback((tab) => () => setActiveTab(tab), []);
+  const handlePrint = useCallback(() => window.print(), []);
+  const handleShare = useCallback(() => {
+    if (navigator.share) {
+      navigator.share({
+        title: `Order #${orderNumber}`,
+        text: `Order details for #${orderNumber}`,
+        url: window.location.href,
+      });
+    }
+  }, []);
 
   if (!order) {
     return (
@@ -67,48 +84,49 @@ function ShoppingOrderDetailsView({ order, onClose }) {
     );
   }
 
-  const currentStatus =
-    (order.orderStatus || "pending") === "shipped"
-      ? "shipping"
-      : order.orderStatus || "pending";
+  const currentStatus = useMemo(() => 
+    (order.orderStatus || "pending") === "shipped" ? "shipping" : order.orderStatus || "pending"
+  , [order.orderStatus]);
 
-  const status = statusConfig[currentStatus] || statusConfig.pending;
+  const status = useMemo(() => 
+    statusConfig[currentStatus] || statusConfig.pending
+  , [currentStatus]);
   const StatusIcon = status.icon;
 
-  const orderNumber =
-    order.paymentId ||
-    `ORD-${order._id?.slice(-6)?.toUpperCase() || "XXXXXX"}`;
+  const orderNumber = useMemo(() => 
+    order.paymentId || `ORD-${order._id?.slice(-6)?.toUpperCase() || "XXXXXX"}`
+  , [order.paymentId, order._id]);
 
-  const orderDate = order.orderDate
-    ? new Date(order.orderDate).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "Date not available";
+  const orderDate = useMemo(() => 
+    order.orderDate
+      ? new Date(order.orderDate).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "Date not available"
+  , [order.orderDate]);
 
   const subtotal = order.subtotal || order.totalAmount || 0;
   const shippingFee = order.shippingFee || 0;
   const tax = order.tax || 0;
   const total = order.totalAmount || 0;
 
-  const getOrderProgress = () => {
-    const statusOrder = ["pending", "processing", "confirmed", "shipping", "delivered"];
+  const getOrderProgress = useCallback(() => {
     const index = statusOrder.indexOf(currentStatus);
     return index >= 0 ? ((index + 1) / statusOrder.length) * 100 : 0;
-  };
+  }, [currentStatus]);
 
-  const timelineSteps = [
+  const timelineSteps = useMemo(() => [
     { stage: "pending", label: "Order Placed", date: orderDate, completed: true },
     { stage: "processing", label: "Processing", date: "Processing", completed: ["processing", "confirmed", "shipping", "delivered"].includes(currentStatus) },
     { stage: "confirmed", label: "Confirmed", date: "Confirmed", completed: ["confirmed", "shipping", "delivered"].includes(currentStatus) },
     { stage: "shipping", label: "Shipped", date: "Shipping soon", completed: ["shipping", "delivered"].includes(currentStatus) },
     { stage: "delivered", label: "Delivered", date: "Est. 3–5 days", completed: currentStatus === "delivered" },
-  ];
+  ], [orderDate, currentStatus]);
 
   return (
     <DialogContent className="w-full max-w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] sm:max-w-6xl flex flex-col overflow-hidden p-0">
-      {/* Header */}
       <DialogHeader className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -145,22 +163,28 @@ function ShoppingOrderDetailsView({ order, onClose }) {
           </div>
 
           <div className="hidden sm:flex gap-2">
-            <Button variant="outline" size="sm"><Printer className="h-4 w-4" /> Print</Button>
-            <Button variant="outline" size="sm"><Share2 className="h-4 w-4" /> Share</Button>
-            <Button variant="ghost" size="icon" onClick={onClose}><X /></Button>
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-2" /> Print
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 className="h-4 w-4 mr-2" /> Share
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         <div className="flex gap-1 mt-4 overflow-x-auto">
-          {["details", "timeline", "items", "support"].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={handleTabChange(tab)}
               className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2",
+                "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                 activeTab === tab
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -169,11 +193,9 @@ function ShoppingOrderDetailsView({ order, onClose }) {
         </div>
       </DialogHeader>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <Progress value={getOrderProgress()} className="h-2" />
 
-        {/* Items Table */}
         {order.cartItems && (
           <div className="bg-card border rounded-xl overflow-hidden">
             <Table>
@@ -188,7 +210,7 @@ function ShoppingOrderDetailsView({ order, onClose }) {
               <TableBody>
                 {order.cartItems.map((item, idx) => (
                   <TableRow key={idx}>
-                    <TableCell>{item.title}</TableCell>
+                    <TableCell className="font-medium">{item.title}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
                     <TableCell className="text-right">GHC {item.price?.toFixed(2)}</TableCell>
                     <TableCell className="text-right font-bold">
@@ -201,14 +223,39 @@ function ShoppingOrderDetailsView({ order, onClose }) {
           </div>
         )}
 
-        {/* Summary */}
         <div className="bg-card border rounded-xl p-6">
-          <div className="flex justify-between"><span>Subtotal</span><span>GHC {subtotal.toFixed(2)}</span></div>
-          <div className="flex justify-between"><span>Shipping</span><span>{shippingFee === 0 ? "Free" : `GHC ${shippingFee}`}</span></div>
-          <div className="flex justify-between"><span>Tax</span><span>GHC {tax.toFixed(2)}</span></div>
+          <div className="flex justify-between py-1">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-medium">GHC {subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span className="text-muted-foreground">Shipping</span>
+            <span className="font-medium">{shippingFee === 0 ? "Free" : `GHC ${shippingFee.toFixed(2)}`}</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span className="text-muted-foreground">Tax</span>
+            <span className="font-medium">GHC {tax.toFixed(2)}</span>
+          </div>
           <Separator className="my-3" />
-          <div className="flex justify-between font-bold"><span>Total</span><span>GHC {total.toFixed(2)}</span></div>
+          <div className="flex justify-between font-bold text-lg">
+            <span>Total</span>
+            <span className="text-primary">GHC {total.toFixed(2)}</span>
+          </div>
         </div>
+
+        {activeTab === "support" && (
+          <div className="bg-card border rounded-xl p-6 text-center">
+            <HelpCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Need Help?</h3>
+            <p className="text-muted-foreground mb-4">
+              Contact our support team for assistance with this order.
+            </p>
+            <Button className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Contact Support
+            </Button>
+          </div>
+        )}
       </div>
     </DialogContent>
   );

@@ -18,7 +18,7 @@ function CommonForm({
   buttonText,
   isBtnDisabled,
 }) {
-  function renderInputsByComponentType(controlItem) {
+  const renderInputsByComponentType = (controlItem) => {
     const value = formData[controlItem.name] || "";
 
     switch (controlItem.componentType) {
@@ -30,10 +30,10 @@ function CommonForm({
             id={controlItem.name}
             type={controlItem.type}
             value={value}
-            onChange={(event) =>
-              setFormData({ ...formData, [controlItem.name]: event.target.value })
+            onChange={(e) =>
+              setFormData({ ...formData, [controlItem.name]: e.target.value })
             }
-            required={controlItem.required} // optional: native HTML required
+            required={controlItem.required}
           />
         );
 
@@ -65,8 +65,8 @@ function CommonForm({
             placeholder={controlItem.placeholder}
             id={controlItem.name}
             value={value}
-            onChange={(event) =>
-              setFormData({ ...formData, [controlItem.name]: event.target.value })
+            onChange={(e) =>
+              setFormData({ ...formData, [controlItem.name]: e.target.value })
             }
           />
         );
@@ -79,20 +79,19 @@ function CommonForm({
             id={controlItem.name}
             type={controlItem.type}
             value={value}
-            onChange={(event) =>
-              setFormData({ ...formData, [controlItem.name]: event.target.value })
+            onChange={(e) =>
+              setFormData({ ...formData, [controlItem.name]: e.target.value })
             }
           />
         );
     }
-  }
+  };
 
   return (
     <form onSubmit={onSubmit}>
       <div className="flex flex-col gap-3">
         {formControls.map((controlItem) => (
           <div className="grid w-full gap-1.5" key={controlItem.name}>
-            {/* ================= LABEL WITH REQUIRED INDICATOR ================= */}
             <Label className="mb-1">
               {controlItem.label}
               {controlItem.required ? (

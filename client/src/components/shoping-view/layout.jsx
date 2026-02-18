@@ -7,7 +7,7 @@ import {
   Suspense,
   useMemo,
 } from "react";
-import { Toaster } from "@/components/ui/sonner";
+// import { Toaster } from "@/components/ui/sonner";
 import {
   ArrowUp,
   Loader2,
@@ -319,13 +319,13 @@ function ShoppingLayout() {
           </div>
         )}
 
-        <Toaster
+        {/* <Toaster
           position="top-right"
           toastOptions={{
             className: "bg-background border",
             duration: 4000,
           }}
-        />
+        /> */}
 
         <a
           href="#main-content"

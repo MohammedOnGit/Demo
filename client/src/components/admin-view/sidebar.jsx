@@ -1,5 +1,3 @@
-
-// AdminSideBar.jsx - JavaScript version
 import {
   BadgeCheck,
   ChartNoAxesCombined,
@@ -37,11 +35,6 @@ function MenuItems({ setOpen }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const handleNavigate = (path) => {
-    navigate(path);
-    if (setOpen) setOpen(false); // Close mobile sheet on navigation
-  };
-
   return (
     <nav className="mt-8 flex flex-col gap-1">
       {adminSidebarMenuItems.map((item) => {
@@ -50,7 +43,10 @@ function MenuItems({ setOpen }) {
         return (
           <div
             key={item.id}
-            onClick={() => handleNavigate(item.path)}
+            onClick={() => {
+              navigate(item.path);
+              setOpen?.(false);
+            }}
             className={cn(
               "flex cursor-pointer items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all",
               "hover:bg-accent hover:text-accent-foreground",
@@ -72,21 +68,18 @@ function AdminSideBar({ open, setOpen }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const handleLogoClick = () => {
-    navigate("/admin/dashboard");
-    if (setOpen) setOpen(false);
-  };
-
   return (
     <Fragment>
-      {/* Mobile Sidebar (Sheet) */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-64 p-0">
-          <div className="flex h-full flex-col h-screen-dynamic">
+          <div className="flex h-full flex-col">
             <SheetHeader className="border-b bg-background px-6 py-5">
               <SheetTitle
                 className="flex cursor-pointer items-center gap-3"
-                onClick={handleLogoClick}
+                onClick={() => {
+                  navigate("/admin/dashboard");
+                  setOpen?.(false);
+                }}
               >
                 <ChartNoAxesCombined className="h-8 w-8 text-primary" />
                 <h1 className="text-xl font-extrabold tracking-tight">
@@ -94,7 +87,6 @@ function AdminSideBar({ open, setOpen }) {
                 </h1>
               </SheetTitle>
             </SheetHeader>
-
             <div className="flex-1 overflow-y-auto px-4 py-6">
               <MenuItems setOpen={setOpen} />
             </div>
@@ -102,10 +94,8 @@ function AdminSideBar({ open, setOpen }) {
         </SheetContent>
       </Sheet>
 
-      {/* Desktop Sidebar */}
       <aside className="hidden w-64 flex-col border-r bg-background lg:flex">
-        <div className="flex h-full flex-col h-screen-dynamic">
-          {/* Logo/Header */}
+        <div className="flex h-full flex-col">
           <div className="border-b px-6 py-5">
             <div
               onClick={() => navigate("/admin/dashboard")}
@@ -117,8 +107,6 @@ function AdminSideBar({ open, setOpen }) {
               </h1>
             </div>
           </div>
-
-          {/* Menu */}
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <MenuItems />
           </div>

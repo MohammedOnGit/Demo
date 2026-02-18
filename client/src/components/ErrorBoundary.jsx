@@ -29,7 +29,6 @@ class ErrorBoundary extends React.Component {
       errorInfo: null 
     });
     
-    // Clear any local storage errors if present
     localStorage.removeItem('lastWishlistFetchError');
     
     if (this.props.onRetry) {
@@ -50,12 +49,10 @@ class ErrorBoundary extends React.Component {
   };
 
   handleClearCache = () => {
-    // Clear relevant localStorage items
     localStorage.removeItem('lastWishlistFetch');
     localStorage.removeItem('lastWishlistFetchError');
     localStorage.removeItem('wishlistCache');
     
-    // Reload the page
     window.location.reload();
   };
 
@@ -140,7 +137,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Wrapper with hooks
 function ErrorBoundaryWrapper(props) {
   const navigate = useNavigate();
   

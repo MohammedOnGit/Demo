@@ -1,18 +1,96 @@
-import React, { useEffect, useCallback } from 'react';
+// import React, { useEffect, useCallback } from 'react';
+// import { useDispatch, useSelector } from 'react-redux';
+// import { fetchCartItems } from '@/store/shop/cart-slice';
+// import { cartEvents } from '@/utils/cartEvents';
+
+// const CartProvider = ({ children }) => {
+//   const dispatch = useDispatch();
+
+//   // IMPORTANT: shopCart slice (not cart)
+//   const { user } = useSelector((state) => state?.auth || {});
+//   const { lastUpdated } = useSelector((state) => state?.shopCart || {});
+
+//   /**
+//    * Load cart items for the authenticated user
+//    */
+//   const loadCart = useCallback(async () => {
+//     if (!user?.id) return;
+
+//     try {
+//       await dispatch(fetchCartItems(user.id)).unwrap();
+//     } catch (error) {
+//       console.error('Failed to load cart:', error);
+//     }
+//   }, [dispatch, user?.id]);
+
+//   /**
+//    * Initial cart fetch on login / refresh
+//    */
+//   useEffect(() => {
+//     if (user?.id) {
+//       loadCart();
+//     }
+//   }, [loadCart, user?.id]);
+
+//   /**
+//    * Sync cart across tabs + custom cart events
+//    */
+//   useEffect(() => {
+//     if (!user?.id) return;
+
+//     const handleStorageChange = (event) => {
+//       if (event.key !== 'cart_last_updated') return;
+
+//       const lastSyncTime = lastUpdated
+//         ? new Date(lastUpdated).getTime()
+//         : 0;
+
+//       const shouldRefresh = Date.now() - lastSyncTime > 5000;
+
+//       if (shouldRefresh) {
+//         loadCart();
+//       }
+//     };
+
+//     const handleCartUpdateEvent = () => {
+//       loadCart();
+//     };
+
+//     window.addEventListener('storage', handleStorageChange);
+//     window.addEventListener('cart-updated', handleCartUpdateEvent);
+
+//     // Custom event bus subscription
+//     const unsubscribe = cartEvents.subscribe(handleCartUpdateEvent);
+
+//     return () => {
+//       window.removeEventListener('storage', handleStorageChange);
+//       window.removeEventListener('cart-updated', handleCartUpdateEvent);
+
+//       if (typeof unsubscribe === 'function') {
+//         unsubscribe();
+//       }
+//     };
+//   }, [loadCart, user?.id, lastUpdated]);
+
+//   return <>{children}</>;
+// };
+
+// export default CartProvider;
+
+
+
+import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCartItems } from '@/store/shop/cart-slice';
 import { cartEvents } from '@/utils/cartEvents';
 
-const CartProvider = ({ children }) => {
-  const dispatch = useDispatch();
+const CART_SYNC_THRESHOLD = 5000;
 
-  // IMPORTANT: shopCart slice (not cart)
+function CartProvider({ children }) {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state?.auth || {});
   const { lastUpdated } = useSelector((state) => state?.shopCart || {});
 
-  /**
-   * Load cart items for the authenticated user
-   */
   const loadCart = useCallback(async () => {
     if (!user?.id) return;
 
@@ -23,29 +101,20 @@ const CartProvider = ({ children }) => {
     }
   }, [dispatch, user?.id]);
 
-  /**
-   * Initial cart fetch on login / refresh
-   */
   useEffect(() => {
     if (user?.id) {
       loadCart();
     }
   }, [loadCart, user?.id]);
 
-  /**
-   * Sync cart across tabs + custom cart events
-   */
   useEffect(() => {
     if (!user?.id) return;
 
     const handleStorageChange = (event) => {
       if (event.key !== 'cart_last_updated') return;
 
-      const lastSyncTime = lastUpdated
-        ? new Date(lastUpdated).getTime()
-        : 0;
-
-      const shouldRefresh = Date.now() - lastSyncTime > 5000;
+      const lastSyncTime = lastUpdated ? new Date(lastUpdated).getTime() : 0;
+      const shouldRefresh = Date.now() - lastSyncTime > CART_SYNC_THRESHOLD;
 
       if (shouldRefresh) {
         loadCart();
@@ -59,20 +128,16 @@ const CartProvider = ({ children }) => {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('cart-updated', handleCartUpdateEvent);
 
-    // Custom event bus subscription
     const unsubscribe = cartEvents.subscribe(handleCartUpdateEvent);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('cart-updated', handleCartUpdateEvent);
-
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
+      unsubscribe?.();
     };
   }, [loadCart, user?.id, lastUpdated]);
 
   return <>{children}</>;
-};
+}
 
 export default CartProvider;

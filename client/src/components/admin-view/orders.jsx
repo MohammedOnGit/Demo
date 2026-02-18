@@ -71,45 +71,10 @@ import {
   clearAdminOrderError,
 } from "@/store/admin/order-slice";
 
-// Status configuration
-const statusConfig = {
-  pending: {
-    label: "Pending",
-    variant: "secondary",
-    icon: Package,
-    color: "text-yellow-600 bg-yellow-50 border-yellow-200",
-  },
-  processing: {
-    label: "Processing",
-    variant: "default",
-    icon: Package,
-    color: "text-blue-600 bg-blue-50 border-blue-200",
-  },
-  shipped: {
-    label: "Shipped",
-    variant: "outline",
-    icon: Truck,
-    color: "text-purple-600 bg-purple-50 border-purple-200",
-  },
-  delivered: {
-    label: "Delivered",
-    variant: "success",
-    icon: CheckCircle,
-    color: "text-green-600 bg-green-50 border-green-200",
-  },
-  cancelled: {
-    label: "Cancelled",
-    variant: "destructive",
-    icon: XCircle,
-    color: "text-red-600 bg-red-50 border-red-200",
-  },
-  confirmed: {
-    label: "Confirmed",
-    variant: "default",
-    icon: CheckCircle,
-    color: "text-emerald-600 bg-emerald-50 border-emerald-200",
-  },
-};
+// Import auth selectors
+import { selectCurrentUser } from "@/store/auth-slice";
+
+import { statusConfig } from "../../config";
 
 function AdminOrders() {
   const dispatch = useDispatch();
@@ -117,6 +82,8 @@ function AdminOrders() {
   const isLoading = useSelector(selectAdminOrderLoading);
   const error = useSelector(selectAdminOrderError);
   const pagination = useSelector(selectAdminOrderPagination);
+  
+  const currentUser = useSelector(selectCurrentUser);
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
@@ -209,6 +176,60 @@ function AdminOrders() {
       default:
         return <CreditCard className="h-3.5 w-3.5" />;
     }
+  };
+
+  // Get customer name from order data - UPDATED with multiple fallbacks
+  const getCustomerName = (order) => {
+    if (!order) return "Customer";
+    
+    // 1. Check direct userName field (from backend)
+    if (order.userName) {
+      return order.userName;
+    }
+    
+    // 2. Check populated user object
+    if (order.user) {
+      if (order.user.userName) return order.user.userName;
+      if (order.user.name) return order.user.name;
+      if (order.user.fullName) return order.user.fullName;
+    }
+    
+    // 3. Check customerName field
+    if (order.customerName && order.customerName !== 'N/A') {
+      return order.customerName;
+    }
+    
+    // 4. Check addressInfo
+    if (order.addressInfo) {
+      if (order.addressInfo.fullName) return order.addressInfo.fullName;
+      if (order.addressInfo.name) return order.addressInfo.name;
+    }
+    
+    // 5. Extract from email as fallback
+    const email = order.customerEmail || order.user?.email || order.userEmail;
+    if (email && email.includes('@')) {
+      const namePart = email.split('@')[0];
+      // Format nicely: "ibrahimmohammedvvis" -> "Ibrahim Mohammed Vvis"
+      return namePart
+        .split(/[._-]/)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+    }
+    
+    return "N/A";
+  };
+
+  // Get customer email from order data
+  const getCustomerEmail = (order) => {
+    if (!order) return "No email";
+    
+    return (
+      order.user?.email ||
+      order.userEmail ||
+      order.customerEmail ||
+      order.addressInfo?.email ||
+      "No email"
+    );
   };
 
   const totalPages = Math.ceil(pagination.totalOrders / pagination.limit) || 1;
@@ -396,15 +417,13 @@ function AdminOrders() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
+                            <User className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div className="min-w-0">
                               <p className="font-medium text-sm truncate">
-                                {order.customerName ||
-                                  order.addressInfo?.fullName ||
-                                  "Customer"}
+                                {getCustomerName(order)}
                               </p>
                               <p className="text-xs text-muted-foreground truncate">
-                                {order.customerEmail || "No email"}
+                                {getCustomerEmail(order)}
                               </p>
                             </div>
                           </div>
@@ -538,71 +557,6 @@ function AdminOrders() {
           )}
         </CardContent>
       </Card>
-
-      {/* Stats Cards - Responsive Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-        <Card className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Today's Orders</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold mt-1 text-start">12</p>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
-                <Package className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-blue-600 mt-1 text-start">
-              8
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">In Transit</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-purple-50 flex items-center justify-center">
-                <Truck className="h-5 w-5 text-purple-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-purple-600 mt-1 text-start">
-              15
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Revenue Today</p>
-              </div>
-              <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-green-600 mt-1 break-all text-start">
-              {formatCurrency(24500)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Details Dialog */}
       <Dialog open={openDetailsDialog} onOpenChange={setOpenDetailsDialog}>
