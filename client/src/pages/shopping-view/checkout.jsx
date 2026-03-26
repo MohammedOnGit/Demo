@@ -482,7 +482,7 @@ function ShoppingCheckout() {
       </div>
 
       <div className="w-full px-4 sm:px-6 md:px-8 lg:px-8 mt-5">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <div className="lg:sticky lg:top-5">
             <Address onAddressSelect={handleAddressSelect} />
           </div>
