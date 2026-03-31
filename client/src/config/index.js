@@ -2036,3 +2036,47 @@ export const typeConfig = {
     icon: MapPin 
   },
 };
+
+
+// Ghana district codes (comprehensive list from all regions)
+const DISTRICT_CODES = new Set([
+  // Ashanti Region
+  "A2", "A3", "A4", "A5", "A6", "A7", "A8", "AA", "AAF", "AAK", "AAM", "AAS", "AAT",
+  "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AKW", "AL", "AM", "AN",
+  "AO", "AOE", "AOK", "AOT", "AP", "AQ", "AR", "AS", "ASU", "AT", "AU", "AV", "AW",
+  "AX", "AY", "AZ",
+  // Bono Region
+  "BA", "BB", "BC", "BD", "BE", "BF", "BI", "BJ", "BS", "BW", "BY", "BZ",
+  // Central Region
+  "CA", "CB", "CC", "CE", "CF", "CG", "CH", "CI", "CJ", "CK", "CL", "CM", "CN", "CO",
+  "CP", "CR", "CS", "CT", "CU", "CV", "CW", "CX",
+  // Eastern Region
+  "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9", "EA", "EB", "EC", "ED", "EF", "EG",
+  "EH", "EI", "EJ", "EK", "EL", "EM", "EN", "EO", "EP", "EQ", "ER", "ES", "ET", "EU",
+  "EV", "EW", "EX", "EY", "EZ",
+  // Greater Accra Region
+  "G2", "G3", "G4", "G6", "G7", "GA", "GB", "GC", "GD", "GE", "GF", "GG", "GI", "GJ",
+  "GK", "GL", "GM", "GN", "GO", "GQ", "GR", "GS", "GT", "GU", "GV", "GW", "GX", "GY", "GZ",
+  // Ahafo Region
+  "HA", "HB", "HQ", "HR", "HS", "HT",
+  // North East Region
+  "MC", "ME", "MM", "MP", "MW", "MY",
+  // Northern Region
+  "NA", "NF", "NG", "NI", "NK", "NL", "NN", "NO", "NR", "NS", "NT", "NU", "NV", "NX", "NY", "NZ",
+  // Oti Region
+  "OB", "OE", "OG", "OJ", "OK", "ON", "OQ", "OS", "OW",
+  // Savannah Region
+  "SB", "SE", "SG", "SJ", "SN", "SS", "SW",
+  // Bono East Region
+  "TA", "TE", "TK", "TL", "TN", "TO", "TP", "TS", "TT", "TW", "TX",
+  // Upper East Region
+  "UA", "UB", "UE", "UG", "UK", "UL", "UM", "UN", "UO", "UP", "UR", "US", "UT", "UU", "UW",
+  // Volta Region
+  "VA", "VC", "VD", "VE", "VF", "VG", "VH", "VI", "VK", "VN", "VP", "VT", "VU", "VV", "VW", "VX", "VY", "VZ",
+  // Western Region
+  "WE", "WH", "WJ", "WK", "WM", "WN", "WP", "WR", "WS", "WT", "WW", "WX", "WY", "WZ",
+  // Upper West Region
+  "XD", "XJ", "XK", "XL", "XN", "XO", "XS", "XT", "XW", "XX", "XY",
+  // Western North Region
+  "YA", "YB", "YD", "YE", "YJ", "YK", "YS", "YU", "YW"
+]);

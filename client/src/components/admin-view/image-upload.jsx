@@ -120,7 +120,14 @@ function ProductImageUpload({
         );
 
         if (response.data.success && response.data.imageUrl) {
-          setUploadedImageUrl(response.data.imageUrl);
+          // Handle both response formats: 
+          // - If response returns object with url and publicId, extract just the URL
+          // - If response returns string URL, use it directly
+          const imageUrlValue = typeof response.data.imageUrl === 'object' 
+            ? response.data.imageUrl.url 
+            : response.data.imageUrl;
+          
+          setUploadedImageUrl(imageUrlValue);
           toast.success("Image uploaded successfully!");
         } else {
           throw new Error(response.data.message || "Invalid response from server");
