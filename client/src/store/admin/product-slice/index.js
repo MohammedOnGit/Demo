@@ -1,5 +1,10 @@
+
+// src/store/admin/product-slice/index.js
 import axios from "axios";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+
+// ✅ Use environment variable for API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const initialState = {
   products: [],
@@ -25,7 +30,7 @@ export const addNewProduct = createAsyncThunk(
       };
 
       const result = await axios.post(
-        "http://localhost:5000/api/admin/products/add",
+        `${API_BASE_URL}/admin/products/add`,
         productData,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -43,7 +48,7 @@ export const fetchAllProducts = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const result = await axios.get(
-        "http://localhost:5000/api/admin/products/all"
+        `${API_BASE_URL}/admin/products/all`
       );
       return result.data?.data || result.data;
     } catch (error) {
@@ -71,7 +76,7 @@ export const editProduct = createAsyncThunk(
       };
 
       const result = await axios.put(
-        `http://localhost:5000/api/admin/products/${productId}`,
+        `${API_BASE_URL}/admin/products/${productId}`,
         updateData,
         { headers: { "Content-Type": "application/json" } }
       );
@@ -89,7 +94,7 @@ export const deletedProduct = createAsyncThunk(
   async ({ productId }, { rejectWithValue }) => {
     try {
       await axios.delete(
-        `http://localhost:5000/api/admin/products/delete/${productId}`
+        `${API_BASE_URL}/admin/products/delete/${productId}`
       );
       return { productId };
     } catch (error) {

@@ -1792,7 +1792,7 @@ function AdminOrderDetailsView({ order, onClose }) {
   const nextStatuses = getNextStatuses(currentStatus);
 
   return (
-    <DialogContent className="w-full max-w-full h-[100dvh] sm:max-h-[95vh] sm:max-w-6xl flex flex-col overflow-hidden p-0 bg-background">
+    <DialogContent className="w-full max-w-full h-dvh sm:max-h-[95vh] sm:max-w-6xl flex flex-col overflow-hidden p-0 bg-background">
       <DialogHeader className="sticky top-0 z-50 bg-background border-b px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0 flex-1">

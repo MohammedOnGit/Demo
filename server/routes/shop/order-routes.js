@@ -1,10 +1,11 @@
+// server/routes/shop/order-routes.js
 const express = require('express');
 const router = express.Router();
-const { 
-  createOrder, 
+const {
+  createOrder,
   verifyPayment,
   getOrderDetails,
-  getAllOrdersByUserId 
+  getAllOrdersByUserId,
 } = require('../../controllers/shop/order-controller');
 
 const { handlePaystackWebhook } = require('../../controllers/shop/webhookController');
@@ -19,7 +20,7 @@ router.get('/verify-payment', verifyPayment);
 router.get('/details/:orderId', getOrderDetails);
 
 // Get all orders by user ID
-router.get('/list/:userId', getAllOrdersByUserId); // ADDED: This route was missing
+router.get('/list/:userId', getAllOrdersByUserId);
 
 // Paystack Webhook - MUST use express.raw for signature verification
 router.post('/webhook/paystack', express.raw({ type: 'application/json' }), handlePaystackWebhook);

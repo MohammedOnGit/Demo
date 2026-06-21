@@ -2039,7 +2039,7 @@ export const typeConfig = {
 
 
 // Ghana district codes (comprehensive list from all regions)
-const DISTRICT_CODES = new Set([
+export const DISTRICT_CODES = new Set([
   // Ashanti Region
   "A2", "A3", "A4", "A5", "A6", "A7", "A8", "AA", "AAF", "AAK", "AAM", "AAS", "AAT",
   "AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AKW", "AL", "AM", "AN",

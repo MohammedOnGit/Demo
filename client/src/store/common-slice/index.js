@@ -1,5 +1,9 @@
+// src/store/common-slice/index.js
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
+
+// ✅ Use environment variable for API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const initialState = {
   isloading: false,
@@ -16,7 +20,7 @@ const initialState = {
 export const getFeatureImages = createAsyncThunk(
   "/common/getFeatureImages",
   async () => {
-    const response = await axios.get(`http://localhost:5000/api/common/feature/get`);
+    const response = await axios.get(`${API_BASE_URL}/common/feature/get`);
     return response.data;
   }
 );
@@ -29,7 +33,7 @@ export const addFeatureImage = createAsyncThunk(
       const token = localStorage.getItem('app_token');
       
       const response = await axios.post(
-        `http://localhost:5000/api/common/feature/add`,
+        `${API_BASE_URL}/common/feature/add`,
         { image },
         {
           headers: {
@@ -54,7 +58,7 @@ export const deleteFeatureImage = createAsyncThunk(
       const token = localStorage.getItem('app_token');
       
       const response = await axios.delete(
-        `http://localhost:5000/api/common/feature/delete/${id}`,
+        `${API_BASE_URL}/common/feature/delete/${id}`,
         {
           headers: {
             'Authorization': token ? `Bearer ${token}` : '',

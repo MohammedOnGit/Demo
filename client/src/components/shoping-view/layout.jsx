@@ -62,10 +62,10 @@ const useDeviceDetection = () => {
 /* -------------------------------------------------------------------------- */
 
 const PageLoadingIndicator = ({ isLoading }) => (
-  <div className="fixed top-16 left-0 right-0 z-[100] h-1 bg-primary/10 overflow-hidden pointer-events-none">
+  <div className="fixed top-16 left-0 right-0 z-100 h-1 bg-primary/10 overflow-hidden pointer-events-none">
     <div
       className={cn(
-        "h-full bg-gradient-to-r from-primary via-primary/80 to-primary transition-all duration-300",
+        "h-full bg-linear-to-r from-primary via-primary/80 to-primary transition-all duration-300",
         isLoading ? "w-full" : "w-0"
       )}
     />
@@ -109,7 +109,7 @@ const ScrollToTopButton = () => {
         "fixed right-4 sm:right-6 bottom-24 sm:bottom-6 z-40",
         "h-12 w-12 rounded-full shadow-2xl shadow-primary/20",
         "bg-background border-2 border-primary/20",
-        "backdrop-blur-sm supports-[backdrop-filter]:bg-background/80",
+        "backdrop-blur-sm supports-backdrop-filter:bg-background/80",
         "transition-all duration-300 transform",
         visible
           ? "opacity-100 translate-y-0 scale-100"
@@ -329,7 +329,7 @@ function ShoppingLayout() {
 
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 z-[9999] bg-primary text-primary-foreground px-4 py-2 rounded-md"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 z-9999 bg-primary text-primary-foreground px-4 py-2 rounded-md"
         >
           Skip to main content
         </a>
