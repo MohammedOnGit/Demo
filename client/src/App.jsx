@@ -59,7 +59,7 @@ const LoadingFallback = () => (
 
 // ==================== SESSION RESTORING COMPONENT ====================
 const SessionRestoring = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+  <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-blue-50 to-white p-4">
     <div className="max-w-md w-full text-center space-y-6">
       <div className="relative">
         <div className="h-24 w-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -420,7 +420,7 @@ function OrderConfirmation() {
                             GHC {item.price?.toFixed(2) || "0.00"} × {item.quantity || 1}
                           </p>
                         </div>
-                        <div className="font-medium text-gray-800 flex-shrink-0">
+                        <div className="font-medium text-gray-800 shrink-0">
                           GHC {((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                         </div>
                       </div>

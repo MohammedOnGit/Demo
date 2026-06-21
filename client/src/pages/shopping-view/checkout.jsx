@@ -185,14 +185,14 @@ function ShoppingCheckout() {
 
   return (
     <div className="flex flex-col w-full">
-      <div className="relative w-full overflow-hidden h-[200px] sm:h-[260px] md:h-[320px] lg:h-96">
+      <div className="relative w-full overflow-hidden h-[200px] sm:h-[260px] md:h-80 lg:h-96">
         <img
           src={malikImg}
           alt="Shopping banner"
           className="absolute inset-0 w-full h-full object-cover lg:object-top"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+        <div className="absolute inset-0 bg-linear-to-b from-transparent to-black/30" />
       </div>
 
       <div className="w-full px-4 sm:px-6 md:px-8 lg:px-8 mt-5">

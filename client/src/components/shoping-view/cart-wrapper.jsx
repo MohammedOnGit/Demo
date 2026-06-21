@@ -285,7 +285,7 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
       onEscapeKeyDown={handleClose}
       onPointerDownOutside={handleClose}
     >
-      <SheetHeader className="border-b px-4 py-3 flex-shrink-0">
+      <SheetHeader className="border-b px-4 py-3 shrink-0">
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-5 w-5 text-muted-foreground" />
           <div>
@@ -333,7 +333,7 @@ function UserCartWrapper({ cartItems = [], setOpenCartSheet }) {
       </div>
 
       {hasItems && (
-        <div className="border-t px-4 py-4 space-y-4 flex-shrink-0">
+        <div className="border-t px-4 py-4 space-y-4 shrink-0">
           <div className="text-sm space-y-2">
             <div className="flex justify-between">
               <span>Subtotal</span>
