@@ -522,7 +522,7 @@ export default function ShoppingListing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/10">
+    <div className="min-h-screen bg-linear-to-b from-background to-muted/10">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
