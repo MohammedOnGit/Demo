@@ -245,7 +245,7 @@ function AddressCard({
             </Badge>
           )}
           {isDefault && !isSelected && (
-            <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+            <Badge className="gap-1 bg-linear-to-r from-amber-500 to-orange-500 text-white border-0">
               <Star className="h-3 w-3 fill-white" /> Default
             </Badge>
           )}
@@ -272,9 +272,9 @@ function AddressCard({
 
         <div className="space-y-3 ml-1">
           <div className="flex items-start gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="space-y-0.5 flex-1">
-              <p className="font-medium text-sm leading-tight break-words">
+              <p className="font-medium text-sm leading-tight wrap-break-word">
                 {address}
               </p>
               <p className="text-sm text-muted-foreground">{city}</p>
@@ -282,7 +282,7 @@ function AddressCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
             <a
               href={`tel:${phone}`}
               className="text-sm font-medium hover:text-primary transition-colors"
@@ -293,7 +293,7 @@ function AddressCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Hash className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="flex-1 flex items-center justify-between">
               <code className="text-xs font-mono bg-muted/30 px-2 py-1 rounded truncate max-w-[70%]">
                 {digitalAddress}
@@ -315,7 +315,7 @@ function AddressCard({
 
           {notes && (
             <div className="flex items-start gap-2 pt-2">
-              <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
               <div className="flex-1">
                 <p className="text-xs text-muted-foreground mb-1">
                   Delivery Notes
@@ -380,7 +380,7 @@ function AddressCard({
         </div>
       </CardFooter>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
     </Card>
   );
 }

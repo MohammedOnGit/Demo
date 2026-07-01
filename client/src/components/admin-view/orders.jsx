@@ -238,7 +238,7 @@ function AdminOrders() {
     <div className="space-y-6">
       {/* Main Orders Card */}
       <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-primary/10">
+        <CardHeader className="border-b bg-linear-to-r from-primary/5 to-primary/10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-2xl font-bold">All Orders</CardTitle>
