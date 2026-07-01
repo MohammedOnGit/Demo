@@ -387,8 +387,14 @@ const ShoppingProductTile = ({
      HANDLERS
   ============================ */
   const handleAddToCartClick = useCallback((e) => {
+
     e.stopPropagation();
     e.preventDefault();
+
+    if (!user?.id) {
+      toast.info("Please login to add product");
+      return;
+    }
 
     if (!stockInfo.canAdd) {
       toast.error("Product unavailable");
